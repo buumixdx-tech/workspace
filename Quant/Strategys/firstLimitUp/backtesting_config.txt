@@ -1,0 +1,2 @@
+initial_capital: 10000000
+holding_period: 2

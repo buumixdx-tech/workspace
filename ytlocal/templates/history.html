@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
+<title>YTLocal — 历史</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><span class="logo">🎬</span>YTLocal</div>
+    <nav class="nav">
+      <a href="/">浏览</a>
+      <a href="/download">下载</a>
+      <a href="/history" class="active">历史</a>
+    </nav>
+    <button class="search-btn" onclick="openSearch()" aria-label="搜索">🔍</button>
+  </div>
+</header>
+
+<main class="container" style="padding-top: 16px;">
+  {% if items %}
+  <div class="history-actions">
+    <button class="btn-ghost" onclick="clearHistory()">清空历史</button>
+  </div>
+  <div class="row" style="flex-wrap: wrap; overflow: visible;">
+    {% for v in items %}
+    <a class="card" href="/w/{{ v.id }}" style="margin-bottom: 18px;">
+      <div class="card-thumb">
+        {% if v.thumb_path %}
+        <img src="{{ url_for('serve_thumb', relpath=v.thumb_path.split('/')[-1]) }}" loading="lazy">
+        {% else %}
+        <div class="thumb-fallback">🎬</div>
+        {% endif %}
+        {% if v.duration_sec %}
+        <span class="badge">{{ (v.duration_sec // 60) }}:{{ '%02d' % (v.duration_sec % 60) }}</span>
+        {% endif %}
+        {% if v.duration_sec and v.last_position_sec and v.last_position_sec > 30
+              and (v.duration_sec - v.last_position_sec) > 30 %}
+        <div class="progress"><div class="bar" style="width: {{ (v.last_position_sec * 100 / v.duration_sec) | round(1) }}%"></div></div>
+        {% endif %}
+      </div>
+      <div class="card-info">
+        <div class="card-title">{{ v.title }}</div>
+        <div class="card-meta">
+          {% if v.view_count %}看过 {{ v.view_count }} 次<span class="dot"></span>{% endif %}
+          {{ v.channel or v.source }}
+          {% if v.watched_at %}· {{ v.watched_at | humantime }}{% endif %}
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty">
+    <div class="icon">🕰️</div>
+    <div>还没有观看历史</div>
+    <div class="hint">播放过的视频会出现在这里</div>
+  </div>
+  {% endif %}
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  async function clearHistory(){
+    if (!confirm('清空观看历史?(视频文件不会被删除)')) return;
+    await fetch('/api/history/clear', {method: 'POST'});
+    location.reload();
+  }
+  function openSearch(){
+    const q = prompt('搜索视频:');
+    if (q) location.href = '/history?q=' + encodeURIComponent(q);
+  }
+  function toast(msg, type){
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'toast show ' + (type || '');
+    clearTimeout(window.__tt);
+    window.__tt = setTimeout(() => el.className = 'toast', 2200);
+  }
+  window.toast = toast;
+</script>
+</body>
+</html>

@@ -1,0 +1,1713 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Pulse Radar</title>
+    <!-- Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <!-- Axios -->
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <!-- Pako (Zlib) -->
+    <script src="https://unpkg.com/pako@2.1.0/dist/pako.min.js"></script>
+
+    <!-- Google Fonts: Inter & Noto Sans SC -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Noto+Sans+SC:wght@400;700&display=swap"
+        rel="stylesheet">
+
+    <style>
+        :root {
+            /* Bloomberg Colors */
+            --bg-terminal: #000000;
+            --bg-panel: #121212;
+            --text-primary: #f0f0f0;
+            --text-secondary: #ff9900;
+            /* Amber for keys/labels */
+            --border-color: #333;
+            --accent-green: #00e676;
+            --accent-red: #ff1744;
+            --accent-blue: #00b0ff;
+            --font-sans: 'Inter', 'Noto Sans SC', sans-serif;
+            --font-mono: 'Consolas', 'Monaco', 'Courier New', monospace;
+        }
+
+        body {
+            background-color: var(--bg-terminal);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            margin: 0;
+            padding: 5px;
+            font-size: 13px;
+            height: 100vh;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        /* Scanlines Effect Overlay */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+            height: 100vh;
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+
+        /* 1. Top Bar: Global Stats */
+        .status-bar {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-top: 3px solid var(--text-secondary);
+            padding: 8px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Font & Typography Tweaks */
+        .terminal-header {
+            font-size: 16px;
+            letter-spacing: 2px;
+            font-weight: bold;
+        }
+
+        .terminal-header span {
+            margin-right: 20px;
+        }
+
+        .blink {
+            animation: blinker 1s linear infinite;
+            color: var(--accent-green);
+        }
+
+        @keyframes blinker {
+            50% {
+                opacity: 0;
+            }
+        }
+
+        /* 2. Main Grid: Left (Sectors) vs Right (Stocks) */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 10px;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        /* Panel Styling */
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            /* Ensure scroll stays inside */
+            min-height: 0;
+            /* Allow shrinking for scrolling */
+        }
+
+        .panel-header {
+            background: #222;
+            color: var(--text-secondary);
+            padding: 8px 12px;
+            font-weight: 700;
+            border-bottom: 2px solid var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 14px;
+            flex-shrink: 0;
+            /* Keep header fixed */
+        }
+
+        /* Sector Row Tightening */
+        .sector-row {
+            padding: 6px 12px;
+            border-bottom: 1px dotted #333;
+        }
+
+        .stock-code {
+            font-size: 13px;
+            font-weight: bold;
+            color: #aaa;
+            font-family: var(--font-mono);
+        }
+
+        .stock-name {
+            display: block;
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        /* Sector List (Compact Table) */
+        .sector-list {
+            overflow-y: auto;
+            flex: 1;
+            height: 0;
+            /* Force flex to calculate height for scrolling */
+        }
+
+        .sector-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            border-bottom: 1px solid #222;
+            cursor: pointer;
+        }
+
+        .sector-row:hover {
+            background: #1a1a1a;
+        }
+
+        .sector-row.selected .sector-name {
+            color: var(--text-secondary);
+        }
+
+        .sector-info {
+            flex: 1;
+        }
+
+        .sector-name {
+            display: block;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 2px;
+            font-size: 14px;
+        }
+
+        .sector-stats {
+            font-size: 11px;
+            color: #888;
+        }
+
+        .sector-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 4px;
+            margin-left: 15px;
+            min-width: 75px;
+        }
+
+        .limit-up-badge {
+            background: #ff1744;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 900;
+            padding: 1px 6px;
+            border-radius: 2px;
+            font-family: var(--font-sans);
+            line-height: 1.2;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .limit-up-label {
+            font-size: 9px;
+            opacity: 0.7;
+            font-weight: 700;
+        }
+
+        .sector-val {
+            font-weight: bold;
+            font-size: 15px;
+            font-family: var(--font-mono);
+            line-height: 1;
+        }
+
+        .bg-bar-container {
+            height: 3px;
+            background: #333;
+            width: 100%;
+            margin-top: 4px;
+            display: flex;
+        }
+
+        /* Stock Grid (Mosaic) */
+        .stock-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1px;
+            /* Gap for bordered look */
+            background: var(--border-color);
+            /* Lines between cells */
+            padding: 1px;
+            overflow-y: auto;
+            flex: 1;
+            height: 0;
+            /* Force flex to calculate height for scrolling */
+            align-content: start;
+            /* Don't stretch rows */
+        }
+
+        .stock-cell {
+            background: var(--bg-panel);
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 110px;
+            position: relative;
+        }
+
+        /* --- Modern Visualization Components --- */
+
+        /* 1. Price Range Bar (Visual High-Low) */
+        .range-bar-container {
+            width: 100%;
+            height: 4px;
+            background: #222;
+            border-radius: 2px;
+            position: relative;
+            margin: 8px 0;
+        }
+
+        .range-bar-fill {
+            position: absolute;
+            height: 100%;
+            background: linear-gradient(90deg, #444, #888);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        .range-bar-pointer {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: #fff;
+            border-radius: 50%;
+            top: -1px;
+            transform: translateX(-50%);
+            box-shadow: 0 0 5px #fff;
+            z-index: 2;
+            transition: left 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* 2. Heat Indicator (Pulse for high activity) */
+        @keyframes pulse-heat {
+            0% {
+                box-shadow: 0 0 0 0px rgba(255, 153, 0, 0.4);
+            }
+
+            100% {
+                box-shadow: 0 0 0 8px rgba(255, 153, 0, 0);
+            }
+        }
+
+        .heat-active {
+            animation: pulse-heat 2s infinite;
+        }
+
+        /* 3. Modern Glass Card */
+        .stock-cell {
+            background: linear-gradient(145deg, #151515, #0a0a0a);
+            border: 1px solid #222;
+            border-radius: 4px;
+            padding: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .stock-cell:hover {
+            border-color: var(--text-secondary);
+            transform: translateY(-2px);
+            background: #1a1a1a;
+            z-index: 5;
+        }
+
+        /* 4. Strength Mini-Bar */
+        .strength-meter {
+            height: 2px;
+            background: #111;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+
+        .strength-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        /* 5. Tooltip/Label styling */
+        .v-label {
+            font-size: 9px;
+            color: #555;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .v-value {
+            font-size: 11px;
+            color: #ccc;
+            font-family: var(--font-mono);
+        }
+
+        /* List View Styles (Restored & Enhanced) */
+        .stock-list-view {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            overflow-y: auto;
+            background: var(--bg-panel);
+            height: 0;
+            min-height: 0;
+        }
+
+        .stock-list-header {
+            display: grid;
+            grid-template-columns: 75px 110px 50px 80px 80px 75px 75px 75px 75px 85px 70px 80px 80px 1fr;
+            padding: 8px 12px;
+            background: #111;
+            color: #666;
+            font-size: 11px;
+            font-weight: 800;
+            border-bottom: 2px solid #333;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stock-list-row {
+            display: grid;
+            grid-template-columns: 75px 110px 50px 80px 80px 75px 75px 75px 75px 85px 70px 80px 80px 1fr;
+            padding: 10px 12px;
+            border-bottom: 1px solid #1a1a1a;
+            align-items: center;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            transition: background 0.4s ease, border-color 0.4s ease;
+            cursor: pointer;
+        }
+
+        .list-tag {
+            font-size: 10px;
+            padding: 1px 4px;
+            border-radius: 2px;
+            font-weight: bold;
+            text-align: center;
+            line-height: 1;
+            transition: all 0.3s;
+        }
+
+        .stock-list-row:hover {
+            background: #111;
+            border-left: 2px solid var(--text-secondary);
+            transition: background 0.1s;
+        }
+
+        .list-cell-name {
+            font-family: var(--font-sans);
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .list-cell-concepts {
+            font-family: var(--font-sans);
+            font-size: 11px;
+            color: #555;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .view-toggle-btn {
+            background: #222;
+            color: #666;
+            border: 1px solid #333;
+            padding: 4px 12px;
+            font-size: 10px;
+            cursor: pointer;
+            margin-left: 10px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .view-toggle-btn.active {
+            background: var(--text-secondary);
+            color: #000;
+            border-color: var(--text-secondary);
+            box-shadow: 0 0 10px rgba(255, 153, 0, 0.3);
+        }
+
+        .stock-list-header span {
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stock-list-header span:hover {
+            color: #fff;
+        }
+
+        .sort-icon {
+            font-size: 8px;
+            color: var(--text-secondary);
+        }
+
+        /* Stock Stats Row */
+        .stock-stats-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+            font-size: 11px;
+            color: #666;
+            margin: 4px 0;
+            font-family: var(--font-mono);
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .stat-label {
+            color: #444;
+            margin-right: 4px;
+        }
+
+        .stat-val {
+            color: #888;
+        }
+
+        /* Stock Top Row */
+        .cell-top {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .stock-code {
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-family: var(--font-mono);
+        }
+
+        .stock-tags span {
+            background: #333;
+            color: #fff;
+            padding: 1px 4px;
+            font-size: 10px;
+            margin-left: 4px;
+        }
+
+        /* Stock Price Big */
+        .cell-mid {
+            display: flex;
+            align-items: baseline;
+            justify-content: flex-end;
+            /* Right align numbers */
+            gap: 8px;
+            margin-top: 5px;
+            font-family: var(--font-mono);
+        }
+
+        .price-text {
+            font-size: 20px;
+            font-weight: bold;
+            letter-spacing: -0.5px;
+        }
+
+        .pct-text {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .c-up {
+            color: var(--accent-green);
+        }
+
+        .c-down {
+            color: var(--accent-red);
+        }
+
+        /* Stock Bottom Info */
+        .cell-btm {
+            margin-top: auto;
+            font-size: 11px;
+            color: #888;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Modals & Inputs */
+        .modal {
+            background: #000;
+            border: 2px solid var(--text-secondary);
+            color: var(--text-secondary);
+        }
+
+        input {
+            background: #111;
+            border: 1px solid #444;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+        }
+
+        button {
+            background: var(--text-secondary);
+            color: #000;
+            text-transform: uppercase;
+            font-weight: bold;
+            border: none;
+        }
+
+        /* Utilities */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #555 #0a0a0a;
+        }
+
+        ::-webkit-scrollbar {
+            width: 12px;
+            /* Increased for visibility */
+            display: block !important;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0a0a0a;
+            border-radius: 0;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background-color: #555;
+            border-radius: 10px;
+            border: 3px solid #0a0a0a;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: var(--text-secondary);
+        }
+
+        /* Ensure containers take full height for scrolling to trigger */
+        .sector-list,
+        .stock-grid {
+            scrollbar-gutter: stable;
+        }
+
+        /* Ticker Tape */
+        .ticker-wrap {
+            width: 100%;
+            overflow: hidden;
+            background: #000;
+            border-bottom: 2px solid var(--border-color);
+            white-space: nowrap;
+            box-sizing: border-box;
+            height: 32px;
+            line-height: 32px;
+        }
+
+        .ticker {
+            display: inline-block;
+            animation: ticker 30s linear infinite;
+        }
+
+        .ticker-item {
+            display: inline-block;
+            padding: 0 20px;
+            font-size: 13px;
+            font-family: var(--font-mono);
+        }
+
+        @keyframes ticker {
+            0% {
+                transform: translateX(100%);
+            }
+
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="app">
+        <!-- Setup Modal -->
+        <div class="modal-overlay" v-if="!config.token">
+            <div class="modal" style="width: 500px;">
+                <h2>🔌 Connect to Data Stream</h2>
+                <div style="text-align: left; margin: 15px 0; font-size: 13px; color: #aaa;">
+                    Due to Telegram API limits, to receive data in HTML:
+                    <ol style="padding-left: 20px; line-height: 1.6;">
+                        <li>Create a <b>Group</b> in Telegram.</li>
+                        <li>Invite the Data Source Bot (e.g. <code>@YourSourceBot</code>) into it.</li>
+                        <li>Create a new Bot (via @BotFather) as your "Receiver".</li>
+                        <li>Invite this <b>Receiver Bot</b> into the same Group.</li>
+                        <li><b>Important</b>: Ensure Receiver Bot has <code>/setprivacy</code> &rarr;
+                            <code>DISABLED</code>.
+                        </li>
+                    </ol>
+                </div>
+                <p>Enter <b>Receiver Bot Token</b> below:</p>
+                <input v-model="inputToken" type="password" placeholder="123456:ABC-DEF..." />
+                <button @click="saveConfig">Start Listening</button>
+            </div>
+        </div>
+
+        <!-- Main Layout -->
+        <div class="container" v-else>
+            <div>
+                <!-- Ticker -->
+                <div class="ticker-wrap" v-if="indices.length > 0">
+                    <div class="ticker">
+                        <div class="ticker-item" v-for="idx in indices" :key="idx.name">
+                            <span style="color: #aaa; font-weight: bold;">{{ idx.name }}: </span>
+                            <span style="color: #fff;">{{ idx.price }}</span>
+                            <span :class="idx.pct > 0 ? 'c-down' : (idx.pct < 0 ? 'c-up' : '')"
+                                style="margin-left: 5px;">
+                                {{ idx.pct }}%
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status Header -->
+                <div class="status-bar">
+                    <div class="terminal-header">
+                        <span style="color: var(--text-secondary)">● MARKET_PULSE_V6</span>
+                        <span>{{ lastUpdateTime }}</span>
+                    </div>
+                    <div>
+                        <span v-if="isConnected" class="blink">● LIVE</span>
+                        <span v-else style="color: #666">○ DISC</span>
+                        <button @click="clearData"
+                            style="margin-left: 20px; font-size: 10px; padding: 2px 8px;">CLS</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <!-- Left: Sectors List -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <span>SECTORS</span>
+                        <span>{{ sortedConcepts.length }}</span>
+                    </div>
+                    <div class="sector-list">
+                        <div class="sector-row" v-for="c in sortedConcepts" :key="c.id"
+                            @click="toggleSectorFilter(c.id)" :class="{selected: selectedSectorIds.includes(c.id)}"
+                            :style="{borderLeft: c.level==3 ? '4px solid #ff1744' : (c.level==2 ? '4px solid #ff9100' : (c.level==1 ? '4px solid #00e676' : '4px solid transparent'))}"
+                            style="padding-left: 6px;">
+                            <div class="sector-info">
+                                <span class="sector-name">{{ getConceptName(c.id) }}</span>
+                                <div class="bg-bar-container">
+                                    <div
+                                        :style="{width: getWidth(c.upCount, c.upCount+c.downCount)+'%', background: 'var(--accent-red)'}">
+                                    </div>
+                                    <div
+                                        :style="{width: getWidth(c.downCount, c.upCount+c.downCount)+'%', background: 'var(--accent-green)'}">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="sector-right">
+                                <div v-if="c.limitUp > 0" class="limit-up-badge">
+                                    <span class="limit-up-label">LU</span>
+                                    <span>{{c.limitUp}}</span>
+                                </div>
+                                <div class="sector-val" :class="c.avgChg > 0 ? 'c-down' : 'c-up'">
+                                    {{ (c.avgChg).toFixed(2) }}%
+                                </div>
+                                <!-- Level Badge -->
+                                <div v-if="c.level"
+                                    :style="{background: c.level==3?'#ff1744':(c.level==2?'#ff9100':'#00e676')}"
+                                    style="color:#000; font-size:10px; font-weight:900; padding:1px 4px; border-radius:2px; margin-top:3px; line-height:1; min-width: 14px; text-align: center;">
+                                    {{c.level==3?'P3':(c.level==2?'P2':'P1')}}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Stocks Grid -->
+                <div class="panel">
+                    <div class="panel-header" style="display: flex; align-items: center;">
+                        <span style="flex: 1;">ACTIVE_EQUITIES <span
+                                style="font-size: 11px; opacity: 0.6; margin-left:10px;">{{ filteredStocks.length
+                                }}</span></span>
+                        <div style="display: flex; gap: 4px;">
+                            <button class="view-toggle-btn" :class="{active: viewMode === 'grid'}"
+                                @click="viewMode = 'grid'">GRID</button>
+                            <button class="view-toggle-btn" :class="{active: viewMode === 'list'}"
+                                @click="viewMode = 'list'">LIST</button>
+                        </div>
+                    </div>
+
+                    <!-- GRID VIEW -->
+                    <div class="stock-grid" v-if="viewMode === 'grid'">
+                        <div class="stock-cell" v-for="s in filteredStocks" :key="s.code" :class="getHeatClass(s)"
+                            @click="openStockDetail(s.code)">
+                            <div class="cell-top">
+                                <span class="stock-code">{{ s.code }}</span>
+                                <div class="stock-tags">
+                                    <span v-for="tag in getStockTags(s)" :style="{color: tag.color, background: tag.bg}"
+                                        style="padding: 1px 4px; border-radius: 2px;">{{ tag.text }}</span>
+                                    <span v-if="parseFloat(s.volRatio) > 2.0"
+                                        style="background: var(--text-secondary); color:#000; font-weight:bold; border-radius:2px; padding: 1px 4px;">HEAT</span>
+                                </div>
+                            </div>
+                            <div style="font-weight: bold; color: #fff; font-size: 15px; margin: 2px 0;">{{ s.name ||
+                                '---' }}</div>
+
+                            <!-- Visual Price Range -->
+                            <div class="range-bar-container" v-if="s.high > 0">
+                                <div class="range-bar-pointer" :style="{left: getPos(s.price, s.low, s.high) + '%'}">
+                                </div>
+                            </div>
+
+                            <div class="cell-mid">
+                                <span class="price-text" :class="s.pct > 0 ? 'c-down' : (s.pct < 0 ? 'c-up' : '')">{{
+                                    s.price }}</span>
+                                <span class="pct-text" :class="s.pct > 0 ? 'c-down' : (s.pct < 0 ? 'c-up' : '')">{{
+                                    s.pct > 0 ? '+' : '' }}{{ s.pct }}%</span>
+                            </div>
+                            <div class="stock-stats-row" v-if="s.price !== '-'">
+                                <div class="stat-item"><span class="stat-label">V-R</span><span class="stat-val"
+                                        style="color: var(--accent-blue)">{{ s.volRatio }}</span></div>
+                                <div class="stat-item"><span class="stat-label">T</span><span class="stat-val">{{ s.turn
+                                        }}%</span></div>
+                                <div class="stat-item"><span class="stat-label">A</span><span class="stat-val"
+                                        style="color: var(--text-secondary)">{{ s.amt }}</span></div>
+                                <div class="stat-item"><span class="stat-label">AMP</span><span class="stat-val">{{
+                                        s.amp }}%</span></div>
+                            </div>
+                            <div class="cell-btm">
+                                <span>{{ s.relatedConcepts.slice(0, 2).join(' / ') }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LIST VIEW -->
+                    <div class="stock-list-view" v-else>
+                        <div class="stock-list-header">
+                            <span @click="toggleSort('code')">Code <i v-if="sortKey==='code'"
+                                    class="sort-icon">{{sortOrder===1?'▲':'▼'}}</i></span>
+                            <span @click="toggleSort('name')">Name <i v-if="sortKey==='name'"
+                                    class="sort-icon">{{sortOrder===1?'▲':'▼'}}</i></span>
+                            <span title="Origin Pool">POOL</span>
+                            <span @click="toggleSort('price')">Price <i v-if="sortKey==='price'"
+                                    class="sort-icon">{{sortOrder===1?'▲':'▼'}}</i></span>
+                            <span @click="toggleSort('pct')">Chg% <i v-if="sortKey==='pct'"
+                                    class="sort-icon">{{sortOrder===1?'▲':'▼'}}</i></span>
+                            <span @click="toggleSort('open')">Open <i v-if="sortKey==='open'"
+                                    class="sort-icon">{{sortOrder===1?'▲':'▼'}}</i></span>
+                            <span @click="toggleSort('high')">High <i v-if="sortKey==='high'"
+                                    class="sort-icon">{{sortOrder===1?'▲':'▼'}}</i></span>
+                            <span @click="toggleSort('low')">Low <i v-if="sortKey==='low'"
+                                    class="sort-icon">{{sortOrder===1?'▲':'▼'}}</i></span>
+                            <span @click="toggleSort('turn')">Turn% <i v-if="sortKey==='turn'"
+                                    class="sort-icon">{{sortOrder===1?'▲':'▼'}}</i></span>
+                            <span @click="toggleSort('amt')">Amount <i v-if="sortKey==='amt'"
+                                    class="sort-icon">{{sortOrder===1?'▲':'▼'}}</i></span>
+                            <span @click="toggleSort('amp')">Amp% <i v-if="sortKey==='amp'"
+                                    class="sort-icon">{{sortOrder===1?'▲':'▼'}}</i></span>
+                            <span @click="toggleSort('volRatio')">V-Ratio <i v-if="sortKey==='volRatio'"
+                                    class="sort-icon">{{sortOrder===1?'▲':'▼'}}</i></span>
+                            <span @click="toggleSort('fcap')">F-Cap <i v-if="sortKey==='fcap'"
+                                    class="sort-icon">{{sortOrder===1?'▲':'▼'}}</i></span>
+                            <span @click="toggleSort('mcap')">T-Cap <i v-if="sortKey==='mcap'"
+                                    class="sort-icon">{{sortOrder===1?'▲':'▼'}}</i></span>
+                        </div>
+                        <div class="stock-list-row" v-for="s in filteredStocks" :key="s.code" :class="getHeatClass(s)"
+                            @click="openStockDetail(s.code)">
+                            <span class="stock-code">{{ s.code }}</span>
+                            <span class="list-cell-name">{{ s.name || '---' }}</span>
+
+                            <!-- Source Tag in List -->
+                            <div style="display: flex; gap: 2px;">
+                                <span v-for="tag in getStockTags(s)" class="list-tag"
+                                    :style="{color: tag.color, background: tag.bg}">{{ tag.text }}</span>
+                            </div>
+
+                            <span :class="s.pct > 0 ? 'c-down' : (s.pct < 0 ? 'c-up' : '')"
+                                style="font-weight: bold; font-size: 15px; text-align: right; padding-right:15px;">{{
+                                s.price }}</span>
+
+                            <span :class="s.pct > 0 ? 'c-down' : (s.pct < 0 ? 'c-up' : '')"
+                                style="font-weight: bold;">{{ s.pct > 0 ? '+' : '' }}{{ s.pct }}%</span>
+                            <span style="color: #666;">{{ s.open }}</span>
+                            <span class="c-down" style="font-size: 11px;">{{ s.high }}</span>
+                            <span class="c-up" style="font-size: 11px;">{{ s.low }}</span>
+                            <span style="color: #888;">{{ s.turn }}%</span>
+                            <span style="color: #aaa; font-size: 12px;">{{ s.amt }}</span>
+                            <span style="color: #666;">{{ s.amp }}%</span>
+                            <span style="color: var(--accent-blue); font-weight: bold;">{{ s.volRatio }}</span>
+                            <span style="color: var(--text-secondary); font-weight: bold;">{{ s.fcap }}亿</span>
+                            <span style="color: #666;">{{ s.mcap }}亿</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const CONCEPT_DICT = {
+                "0": "2025年报预增",
+                "1": "3D打印",
+                "2": "6G概念",
+                "3": "AI PC",
+                "4": "AIGC概念",
+                "5": "AI手机",
+                "6": "AI眼镜",
+                "7": "AI语料",
+                "8": "BC电池",
+                "9": "C2M概念",
+                "10": "CRO概念",
+                "11": "ChatGPT概念",
+                "12": "DRG/DIP",
+                "13": "EDR概念",
+                "14": "ERP概念",
+                "15": "ETC",
+                "16": "F5G概念",
+                "17": "HJT电池",
+                "18": "IP经济(谷子经济)",
+                "19": "MCU芯片",
+                "20": "MLOps概念",
+                "21": "MR(混合现实)",
+                "22": "MicroLED概念",
+                "23": "MiniLED",
+                "24": "NFT概念",
+                "25": "NMN概念",
+                "26": "OLED",
+                "27": "PCB概念",
+                "28": "PEEK材料",
+                "29": "PET铜箔",
+                "30": "PM2.5",
+                "31": "POE胶膜",
+                "32": "PPP概念",
+                "33": "PVDF概念",
+                "34": "ST板块",
+                "35": "Sora概念(文生视频)",
+                "36": "TOPCON电池",
+                "37": "Web3.0",
+                "38": "WiFi 6",
+                "39": "一体化压铸",
+                "40": "三胎概念",
+                "41": "上海国企改革",
+                "42": "上海自贸区",
+                "43": "丙烯酸",
+                "44": "两轮车",
+                "45": "中俄贸易概念",
+                "46": "中国AI 50",
+                "47": "中字头股票",
+                "48": "中船系",
+                "49": "中芯国际概念",
+                "50": "中韩自贸区",
+                "51": "举牌",
+                "52": "乳业",
+                "53": "云办公",
+                "54": "云游戏",
+                "55": "云计算",
+                "56": "互联网保险",
+                "57": "互联网金融",
+                "58": "京津冀一体化",
+                "59": "人脸识别",
+                "60": "人造肉",
+                "61": "代糖概念",
+                "62": "仿制药一致性评价",
+                "63": "传感器",
+                "64": "体育产业",
+                "65": "供销社",
+                "66": "俄乌冲突概念",
+                "67": "信创",
+                "68": "信托概念",
+                "69": "元宇宙",
+                "70": "先进封装",
+                "71": "光伏建筑一体化",
+                "72": "光刻机",
+                "73": "光刻胶",
+                "74": "光热发电",
+                "75": "光纤概念",
+                "76": "免税店",
+                "77": "共享单车",
+                "78": "共同富裕示范区",
+                "79": "共封装光学(CPO)",
+                "80": "兵装重组概念",
+                "81": "养老概念",
+                "82": "养鸡",
+                "83": "军工信息化",
+                "84": "军民融合",
+                "85": "农业种植",
+                "86": "农机",
+                "87": "农村电商",
+                "88": "冰雪产业",
+                "89": "冷链物流",
+                "90": "净水概念",
+                "91": "减肥药",
+                "92": "减速器",
+                "93": "创新药",
+                "94": "动力电池回收",
+                "95": "动物疫苗",
+                "96": "化债概念(AMC概念)",
+                "97": "化肥",
+                "98": "区块链",
+                "99": "医疗废物处理",
+                "100": "医美概念",
+                "101": "医药电商",
+                "102": "华为手机",
+                "103": "华为数字能源",
+                "104": "华为昇腾",
+                "105": "华为欧拉",
+                "106": "华为汽车",
+                "107": "华为海思概念股",
+                "108": "华为盘古",
+                "109": "华为鲲鹏",
+                "110": "卫星导航",
+                "111": "参股保险",
+                "112": "参股券商",
+                "113": "参股银行",
+                "114": "可控核聚变",
+                "115": "可燃冰",
+                "116": "可降解塑料",
+                "117": "合成生物",
+                "118": "同花顺中特估100",
+                "119": "同花顺出海50",
+                "120": "同花顺新质50",
+                "121": "同花顺果指数",
+                "122": "同花顺漂亮100",
+                "123": "啤酒概念",
+                "124": "固废处理",
+                "125": "固态电池",
+                "126": "国产操作系统",
+                "127": "国产航母",
+                "128": "国家大基金持股",
+                "129": "国资云",
+                "130": "土地流转",
+                "131": "土壤修复",
+                "132": "在线教育",
+                "133": "地下管网",
+                "134": "垃圾分类",
+                "135": "培育钻石",
+                "136": "基因测序",
+                "137": "多模态AI",
+                "138": "大豆",
+                "139": "大飞机",
+                "140": "天津自贸区",
+                "141": "天然气",
+                "142": "太赫兹",
+                "143": "存储芯片",
+                "144": "宁德时代概念",
+                "145": "安防",
+                "146": "宠物经济",
+                "147": "家庭医生",
+                "148": "家用电器",
+                "149": "富士康概念",
+                "150": "小米汽车",
+                "151": "小红书概念",
+                "152": "小金属概念",
+                "153": "工业大麻",
+                "154": "工业母机",
+                "155": "幽门螺杆菌概念",
+                "156": "广东自贸区",
+                "157": "建筑节能",
+                "158": "快手概念",
+                "159": "成飞概念",
+                "160": "房屋检测",
+                "161": "手机游戏",
+                "162": "托育服务",
+                "163": "抖音概念(字节概念)",
+                "164": "抽水蓄能",
+                "165": "拼多多概念",
+                "166": "换电概念",
+                "167": "摘帽",
+                "168": "数字乡村",
+                "169": "数字孪生",
+                "170": "数字水印",
+                "171": "数字货币",
+                "172": "数据安全",
+                "173": "数据确权",
+                "174": "文化传媒概念",
+                "175": "新型城镇化",
+                "176": "新型工业化",
+                "177": "新型烟草(电子烟)",
+                "178": "新疆振兴",
+                "179": "新股与次新股",
+                "180": "旅游概念",
+                "181": "无人零售",
+                "182": "无线充电",
+                "183": "无线耳机",
+                "184": "时空大数据",
+                "185": "星闪概念",
+                "186": "智慧政务",
+                "187": "智慧灯杆",
+                "188": "智能医疗",
+                "189": "智能家居",
+                "190": "智能座舱",
+                "191": "智能物流",
+                "192": "智能电网",
+                "193": "智能穿戴",
+                "194": "智能音箱",
+                "195": "智谱AI",
+                "196": "有机硅概念",
+                "197": "期货概念",
+                "198": "机器视觉",
+                "199": "染料",
+                "200": "柔性屏(折叠屏)",
+                "201": "柔性直流输电",
+                "202": "核污染防治",
+                "203": "横琴新区",
+                "204": "毛发医疗",
+                "205": "毫米波雷达",
+                "206": "民爆概念",
+                "207": "民营医院",
+                "208": "氟化工概念",
+                "209": "水利",
+                "210": "水泥概念",
+                "211": "污水处理",
+                "212": "汽车拆解概念",
+                "213": "汽车热管理",
+                "214": "汽车芯片",
+                "215": "注册制次新股",
+                "216": "流感",
+                "217": "海南自贸区",
+                "218": "海峡两岸",
+                "219": "海工装备",
+                "220": "消毒剂",
+                "221": "液冷服务器",
+                "222": "深圳国企改革",
+                "223": "烟草",
+                "224": "煤化工概念",
+                "225": "煤炭概念",
+                "226": "燃料电池",
+                "227": "牙科医疗",
+                "228": "物业管理",
+                "229": "特斯拉概念",
+                "230": "特色小镇",
+                "231": "特钢概念",
+                "232": "特高压",
+                "233": "独角兽概念",
+                "234": "猪肉",
+                "235": "猴痘概念",
+                "236": "玉米",
+                "237": "环氧丙烷",
+                "238": "生态农业",
+                "239": "生物疫苗",
+                "240": "生物质能发电",
+                "241": "电力物联网",
+                "242": "电子竞技",
+                "243": "电子纸",
+                "244": "电子身份证",
+                "245": "白酒概念",
+                "246": "百度概念",
+                "247": "盐湖提锂",
+                "248": "眼科医疗",
+                "249": "知识产权保护",
+                "250": "短剧游戏",
+                "251": "石墨烯",
+                "252": "石墨电极",
+                "253": "硅能源",
+                "254": "碳中和",
+                "255": "碳交易",
+                "256": "碳纤维",
+                "257": "磷化工",
+                "258": "福建自贸区",
+                "259": "禽流感",
+                "260": "科创次新股",
+                "261": "租售同权",
+                "262": "移动支付",
+                "263": "稀土永磁",
+                "264": "空气能热泵",
+                "265": "空间计算",
+                "266": "第三代半导体",
+                "267": "算力租赁",
+                "268": "粮食概念",
+                "269": "细胞免疫治疗",
+                "270": "统一大市场",
+                "271": "维生素",
+                "272": "网红经济",
+                "273": "网约车",
+                "274": "网络安全",
+                "275": "网络游戏",
+                "276": "职业教育",
+                "277": "肝炎概念",
+                "278": "脑机接口",
+                "279": "腾讯概念",
+                "280": "自由贸易港",
+                "281": "航空发动机",
+                "282": "航运概念",
+                "283": "芬太尼",
+                "284": "英伟达概念",
+                "285": "苹果概念",
+                "286": "草甘膦",
+                "287": "虚拟数字人",
+                "288": "虚拟现实",
+                "289": "虚拟电厂",
+                "290": "蚂蚁集团概念",
+                "291": "血氧仪",
+                "292": "装配式建筑",
+                "293": "证金持股",
+                "294": "语音技术",
+                "295": "财税数字化",
+                "296": "赛马概念",
+                "297": "超导概念",
+                "298": "超级品牌",
+                "299": "超级电容",
+                "300": "超超临界发电",
+                "301": "足球概念",
+                "302": "跨境支付(CIPS)",
+                "303": "车联网(车路协同)",
+                "304": "转基因",
+                "305": "辅助生殖",
+                "306": "重组蛋白",
+                "307": "量子科技",
+                "308": "金属回收",
+                "309": "金属钴",
+                "310": "金属铅",
+                "311": "金属铜",
+                "312": "金属锌",
+                "313": "金属镍",
+                "314": "钒电池",
+                "315": "钙钛矿电池",
+                "316": "钛白粉概念",
+                "317": "钠离子电池",
+                "318": "铜缆高速连接",
+                "319": "长三角一体化",
+                "320": "长安汽车概念",
+                "321": "阿尔茨海默概念",
+                "322": "雄安新区",
+                "323": "雅下水电概念",
+                "324": "露营经济",
+                "325": "青蒿素",
+                "326": "页岩气",
+                "327": "预制菜",
+                "328": "飞行汽车(eVTOL)",
+                "329": "食品安全",
+                "330": "高压快充",
+                "331": "高压氧舱",
+                "332": "高股息精选",
+                "333": "高铁",
+                "334": "鸿蒙概念",
+                "335": "黄金概念",
+                "336": "黑龙江自贸区",
+                "65535": "2025三季报预增"
+            };
+
+            const { createApp, ref, computed, watch, onMounted } = Vue;
+
+            createApp({
+                setup() {
+                    // Config
+                    const config = ref({
+                        token: '8236604138:AAGY7KsbZ7cWVGYn6ZHf1ZQT7CCubz-Ipgg', // Receiver Bot
+                    });
+                    const inputToken = ref('');
+
+                    // State
+                    const isConnected = ref(false);
+                    const hasError = ref(false);
+                    const isLoading = ref(false);
+                    const lastUpdateId = ref(0);
+                    const lastUpdateTime = ref('-');
+
+                    // Domain Data
+                    const concepts = ref([]); // {id, name, avgChg, ...} map or list? List for now.
+                    const stocks = ref([]); // {code, name, price, pct, mask, reason...}
+                    const conceptNameMap = ref(CONCEPT_DICT); // Initialized with embedded dictionary
+
+                    // Filters
+                    const selectedSectorIds = ref([]);
+                    const viewMode = ref('grid'); // 'grid' or 'list'
+                    const sortKey = ref('pct'); // Default sort by Pct
+                    const sortOrder = ref(-1); // -1 for Desc, 1 for Asc
+
+                    // Sina Cache
+                    const sinaCache = ref({}); // code -> {name, price, pct}
+
+                    // --- Methods ---
+
+                    const saveConfig = () => {
+                        if (inputToken.value) {
+                            localStorage.setItem('tg_token', inputToken.value);
+                            config.value.token = inputToken.value;
+                            startPolling();
+                        }
+                    };
+
+                    const toggleSectorFilter = (id) => {
+                        if (selectedSectorIds.value.includes(id)) {
+                            selectedSectorIds.value = selectedSectorIds.value.filter(x => x !== id);
+                        } else {
+                            selectedSectorIds.value.push(id);
+                        }
+                    };
+
+                    const toggleSort = (key) => {
+                        if (sortKey.value === key) {
+                            sortOrder.value = -sortOrder.value;
+                        } else {
+                            sortKey.value = key;
+                            sortOrder.value = -1; // Default to desc for new key
+                        }
+                    };
+
+                    const getWidth = (val, total) => {
+                        if (!total) return 0;
+                        return (val / total) * 100;
+                    };
+
+                    const getPos = (price, low, high) => {
+                        if (high === low) return 50;
+                        const p = ((price - low) / (high - low)) * 100;
+                        return Math.min(100, Math.max(0, p));
+                    };
+
+                    const getHeatClass = (s) => {
+                        if (parseFloat(s.volRatio) > 2.0) return 'heat-active';
+                        return '';
+                    };
+
+                    const getMarketPrefix = (code) => {
+                        if (code.startsWith('6')) return 'sh';
+                        if (code.startsWith('0') || code.startsWith('3')) return 'sz';
+                        if (code.startsWith('8') || code.startsWith('4')) return 'bj';
+                        return 'sh';
+                    }
+
+                    const getStockTags = (s) => {
+                        const tags = [];
+                        // 来源标识
+                        if (s.isSmall) {
+                            tags.push({ text: '小票', color: '#ff9800', bg: 'rgba(255, 152, 0, 0.1)' });
+                        } else {
+                            tags.push({ text: '冲板', color: '#f44336', bg: 'rgba(244, 67, 54, 0.1)' });
+                        }
+                        return tags;
+                    };
+
+                    // --- Core Logic: Polling ---
+
+                    const startPolling = async () => {
+                        isConnected.value = true;
+                        poll();
+                    };
+
+                    const poll = async () => {
+                        if (!config.value.token) return;
+
+                        try {
+                            const url = `https://api.telegram.org/bot${config.value.token}/getUpdates?offset=${lastUpdateId.value + 1}&timeout=30`;
+                            const res = await axios.get(url);
+                            hasError.value = false;
+
+                            if (res.data.ok && res.data.result.length > 0) {
+                                for (const item of res.data.result) {
+                                    lastUpdateId.value = item.update_id;
+                                    // Support both direct Message and Channel Post
+                                    const msg = item.message || item.channel_post;
+
+                                    if (msg) {
+                                        // Parse entities for text_link
+                                        const entities = msg.entities || [];
+                                        const linkEntity = entities.find(e => e.type === 'text_link' && e.url.startsWith('http://p/'));
+
+                                        if (linkEntity) {
+                                            const b64 = linkEntity.url.substring(9); // remove 'http://p/'
+                                            processPayload(b64);
+                                        } else if (msg.text) {
+                                            // Fallback regex (include = for padding)
+                                            const match = msg.text.match(/http:\/\/p\/([a-zA-Z0-9_\-\+=]+)/);
+                                            if (match) processPayload(match[1]);
+                                        }
+                                    }
+                                }
+                            }
+                            setTimeout(poll, 1000);
+                        } catch (e) {
+                            console.error("Polling error", e);
+                            hasError.value = true;
+                            setTimeout(poll, 5000);
+                        }
+                    };
+
+                    const processPayload = (b64) => {
+                        if (b64) {
+                            // URL Safe Base64 fix
+                            b64 = b64.replace(/-/g, '+').replace(/_/g, '/');
+                            decodePayload(b64);
+                            lastUpdateTime.value = new Date().toLocaleTimeString();
+                        }
+                    }
+
+                    // --- Core Logic: Decoding V6 ---
+
+                    const decodePayload = (b64) => {
+                        try {
+                            const str = atob(b64);
+                            const charData = str.split('').map(x => x.charCodeAt(0));
+                            const binData = new Uint8Array(charData);
+
+                            // Gunzip
+                            const decompressed = pako.inflate(binData);
+                            const view = new DataView(decompressed.buffer);
+                            let offset = 0;
+
+                            // Check Magic
+                            if (decompressed[0] !== 77 || decompressed[1] !== 54) { // 'M6'
+                                console.error("Invalid Magic Header");
+                                return;
+                            }
+                            offset += 2;
+
+                            // 1. Timestamp (4B)
+                            const tsVal = view.getUint32(offset, false); offset += 4; // Big Endian
+                            // Decode TS Scheme B: [Days:15 | Secs:17]
+                            // Not strictly needed for UI display (we use receive time), but good to have
+
+                            // 2. Section A: Primary Sectors (Core/Strong/Explosive)
+                            const topCount = view.getUint16(offset, false); offset += 2;
+                            const topConcepts = parseConcepts(view, topCount, offset);
+                            offset = topConcepts.newOffset;
+
+                            // 3. Section B: Secondary Sectors (Reserved)
+                            const boomCount = view.getUint16(offset, false); offset += 2;
+                            const boomConcepts = parseConcepts(view, boomCount, offset);
+                            offset = boomConcepts.newOffset;
+
+                            // Combine & Sort Concepts
+                            const allConcepts = [...topConcepts.data, ...boomConcepts.data];
+                            concepts.value = allConcepts;
+
+                            // 4. Section C: Lottery Pool
+                            const lotCount = view.getUint16(offset, false); offset += 2;
+                            const lotteryStocks = parseStocks(view, lotCount, offset, false);
+                            offset = lotteryStocks.newOffset;
+
+                            // 5. Section D: Small Cap Pool
+                            const scCount = view.getUint16(offset, false); offset += 2;
+                            const scStocks = parseStocks(view, scCount, offset, true);
+                            offset = scStocks.newOffset;
+
+                            // Combine Stocks
+                            const allStocks = [...lotteryStocks.data, ...scStocks.data];
+
+                            // 5. Build Final Map for Reconciliation & Pre-Hydrate
+                            const newUniqueStocks = [];
+                            const seen = new Set();
+                            for (const s of allStocks) {
+                                if (!seen.has(s.code)) {
+                                    // PRE-HYDRATE from cache to prevent "Flash of '-' "
+                                    const cached = sinaCache.value[s.code];
+                                    if (cached) {
+                                        Object.assign(s, cached);
+                                    }
+                                    newUniqueStocks.push(s);
+                                    seen.add(s.code);
+                                }
+                            }
+
+                            // 6. Smooth Update (Maintain Object References where possible)
+                            const currentMap = new Map(stocks.value.map(x => [x.code, x]));
+                            const finalArray = newUniqueStocks.map(ns => {
+                                const existing = currentMap.get(ns.code);
+                                if (existing) {
+                                    // Update metadata but KEEP reference to avoid DOM teardown
+                                    existing.relatedConcepts = ns.relatedConcepts;
+                                    existing.isSmall = ns.isSmall;
+                                    existing.isSurging = ns.isSurging;
+                                    existing.reason = ns.reason;
+                                    // Also sync name/price if NS got it from cache but existing didn't
+                                    if (ns.price !== '-' && existing.price === '-') {
+                                        Object.assign(existing, ns);
+                                    }
+                                    return existing;
+                                }
+                                return ns;
+                            });
+
+                            stocks.value = finalArray;
+
+                            // 7. Trigger Hydration (Fetch real names/prices)
+                            fetchTencentData(newUniqueStocks.map(s => s.code));
+
+                        } catch (e) {
+                            console.error("Decode V6 failed", e);
+                            alert("Data Parse Error: " + e.message);
+                        }
+                    };
+
+                    const parseConcepts = (view, count, offset) => {
+                        const res = [];
+                        for (let i = 0; i < count; i++) {
+                            const id = view.getUint16(offset, false); offset += 2;
+                            const pctInt = view.getInt16(offset, false); offset += 2;
+                            const lu = view.getUint8(offset); offset += 1;
+                            const ld = view.getUint8(offset); offset += 1;
+                            const up = view.getUint16(offset, false); offset += 2;
+                            const dn = view.getUint16(offset, false); offset += 2;
+                            const toInt = view.getUint16(offset, false); offset += 2;
+                            const level = view.getUint8(offset); offset += 1; // Pool Level
+
+                            const name = conceptNameMap.value[id] || `bk_${id}`;
+                            res.push({
+                                id, name,
+                                avgChg: pctInt / 100,
+                                limitUp: lu,
+                                turnover: toInt / 100,
+                                upCount: up,
+                                downCount: dn,
+                                level: level
+                            });
+                        }
+                        return { data: res, newOffset: offset };
+                    };
+
+                    const parseStocks = (view, count, offset, isSmallPool) => {
+                        const res = [];
+                        for (let i = 0; i < count; i++) {
+                            // 3-byte Code
+                            const b1 = view.getUint8(offset); offset++;
+                            const b2 = view.getUint8(offset); offset++;
+                            const b3 = view.getUint8(offset); offset++;
+                            const codeInt = (b1 << 16) | (b2 << 8) | b3;
+
+                            let codeStr = codeInt.toString();
+                            while (codeStr.length < 6) codeStr = '0' + codeStr;
+
+                            // Flag
+                            const flag = view.getUint8(offset); offset++;
+                            const isSurging = (flag >> 7) & 1;
+                            const isSmall = isSmallPool; // Or check bit 6
+                            const reasonBits = flag & 0x3F;
+
+                            // Concept List
+                            const cCount = view.getUint8(offset); offset++;
+                            const related = [];
+                            for (let k = 0; k < cCount; k++) {
+                                const cid = view.getUint16(offset, false); offset += 2;
+                                related.push(conceptNameMap.value[cid] || `${cid}`);
+                            }
+
+                            res.push({
+                                code: codeStr,
+                                isSmall: isSmall,
+                                isSurging: isSurging,
+                                reason: reasonBits,
+                                relatedConcepts: related,
+                                name: '...', price: '-', pct: 0
+                            });
+                        }
+                        return { data: res, newOffset: offset };
+                    };
+
+                    // --- Hydration (Tencent) ---
+                    const fetchTencentData = async (codeList) => {
+                        if (codeList.length === 0) return;
+
+                        // Format: sh600519
+                        const symbolList = codeList.map(c => getMarketPrefix(c) + c).join(',');
+                        const url = `http://qt.gtimg.cn/q=${symbolList}`;
+
+                        const script = document.createElement('script');
+                        script.src = url;
+                        script.onload = () => {
+                            // Response: v_sh600519="1~Moutai~600519~1500.00~..."
+                            codeList.forEach(code => {
+                                const fullCode = getMarketPrefix(code) + code;
+                                const varName = `v_${fullCode}`;
+                                const dataStr = window[varName];
+                                if (dataStr) {
+                                    const parts = dataStr.split('~');
+                                    if (parts.length > 45) {
+                                        const name = parts[1];
+                                        const price = parseFloat(parts[3]);
+                                        const lastClose = parseFloat(parts[4]);
+                                        const open = parseFloat(parts[5]);
+                                        const pct = parseFloat(parts[32]);
+                                        const high = parseFloat(parts[33]);
+                                        const low = parseFloat(parts[34]);
+                                        const amtWan = parseFloat(parts[37]);
+                                        const turn = parseFloat(parts[38]);
+                                        const amp = parseFloat(parts[41]); // Amplitude
+                                        const fcap = parseFloat(parts[44]); // Float Market Cap (Billion)
+                                        const mcap = parseFloat(parts[45]); // Total Market Cap (Billion)
+                                        const volRatio = parseFloat(parts[49]) || 0; // Volume Ratio
+
+                                        // Format Amt
+                                        const amtValue = amtWan * 10000;
+                                        let amt = '-';
+                                        if (amtValue > 100000000) amt = (amtValue / 100000000).toFixed(2) + '亿';
+                                        else if (amtValue > 10000) amt = (amtValue / 10000).toFixed(2) + '万';
+                                        else amt = amtValue.toFixed(0);
+
+                                        // Update Cache
+                                        const stockData = {
+                                            name, price, pct, amt, high, low, turn,
+                                            open, lastClose, amp, mcap, fcap, volRatio
+                                        };
+                                        sinaCache.value[code] = stockData;
+
+                                        // Update View
+                                        const s = stocks.value.find(x => x.code === code);
+                                        if (s) {
+                                            Object.assign(s, stockData);
+                                        }
+                                    }
+                                }
+                            });
+                            script.remove();
+                        };
+                        document.body.appendChild(script);
+                    };
+
+                    // Computed
+                    const sortedConcepts = computed(() => {
+                        return concepts.value.slice().sort((a, b) => b.avgChg - a.avgChg);
+                    });
+
+                    const filteredStocks = computed(() => {
+                        let res = [];
+                        if (selectedSectorIds.value.length === 0) {
+                            res = stocks.value.slice();
+                        } else {
+                            const selectedNames = selectedSectorIds.value.map(id => {
+                                const c = concepts.value.find(x => x.id === id);
+                                return c ? c.name : '';
+                            });
+                            res = stocks.value.filter(s => {
+                                return s.relatedConcepts.some(rc => selectedNames.includes(rc));
+                            });
+                        }
+
+                        // Apply Sorting
+                        if (sortKey.value) {
+                            res.sort((a, b) => {
+                                let valA = a[sortKey.value];
+                                let valB = b[sortKey.value];
+
+                                // Handle special formats like '1.2B' or '345W' or '亿'/'万'
+                                const parseNum = (v) => {
+                                    if (typeof v === 'number') return v;
+                                    if (!v || v === '-') return -999999999;
+                                    let s = v.toString();
+                                    let factor = 1;
+                                    if (s.endsWith('亿')) { factor = 100000000; s = s.slice(0, -1); }
+                                    else if (s.endsWith('万')) { factor = 10000; s = s.slice(0, -1); }
+                                    else if (s.endsWith('B')) { factor = 100000000; s = s.slice(0, -1); }
+                                    else if (s.endsWith('W')) { factor = 10000; s = s.slice(0, -1); }
+                                    return (parseFloat(s) || 0) * factor;
+                                };
+
+                                if (sortKey.value === 'code' || sortKey.value === 'name') {
+                                    return valA.localeCompare(valB) * sortOrder.value;
+                                }
+
+                                return (parseNum(valA) - parseNum(valB)) * sortOrder.value;
+                            });
+                        }
+                        return res;
+                    });
+
+                    // Indices State
+                    const indices = ref([]);
+
+                    // --- Fetch Indices (Tencent) ---
+                    const fetchIndices = () => {
+                        // Codes: sh000001, sz399001, sz399006, bj899050
+                        const codes = ['sh000001', 'sz399001', 'sz399006', 'bj899050'];
+                        const url = `http://qt.gtimg.cn/q=${codes.join(',')}`;
+
+                        const script = document.createElement('script');
+                        script.src = url;
+                        script.onload = () => {
+                            const newIndices = [];
+                            // Helper to parse
+                            const parseIdx = (code, label) => {
+                                const varName = `v_${code}`;
+                                const val = window[varName];
+                                if (val) {
+                                    const p = val.split('~');
+                                    // p[3]=Price, p[31]=Change, p[32]=Pct
+                                    newIndices.push({
+                                        name: label,
+                                        price: parseFloat(p[3]).toFixed(2),
+                                        change: parseFloat(p[31]).toFixed(2),
+                                        pct: parseFloat(p[32]).toFixed(2)
+                                    });
+                                }
+                            };
+
+                            parseIdx('sh000001', 'SH COMP');
+                            parseIdx('sz399001', 'SZ COMP');
+                            parseIdx('sz399006', 'CHINEXT');
+                            parseIdx('bj899050', 'BSE 50');
+
+                            indices.value = newIndices;
+                            script.remove();
+                        };
+                        document.body.appendChild(script);
+                    };
+
+                    // Initial auto-start if token exists
+                    onMounted(() => {
+                        if (config.value.token) {
+                            startPolling();
+                            fetchIndices();
+                            setInterval(fetchIndices, 5000);
+                        }
+                    });
+
+                    const getConceptName = (id) => {
+                        if (!conceptNameMap.value) return '#' + id;
+                        return conceptNameMap.value[id] || ('#' + id);
+                    };
+
+                    const openStockDetail = (code) => {
+                        window.open(`https://stockpage.10jqka.com.cn/${code}/`, '_blank');
+                    };
+
+                    return {
+                        config, inputToken, saveConfig,
+                        isConnected, hasError, isLoading, lastUpdateTime,
+                        sortedConcepts, filteredStocks,
+                        toggleSectorFilter, selectedSectorIds, viewMode,
+                        sortKey, sortOrder, toggleSort,
+                        clearData: () => { stocks.value = []; concepts.value = []; },
+                        getWidth, getStockTags, getMarketPrefix, getPos, getHeatClass,
+                        indices,
+                        getConceptName,
+                        openStockDetail
+                    };
+                }
+            }).mount('#app');
+        </script>
+</body>
+
+</html>

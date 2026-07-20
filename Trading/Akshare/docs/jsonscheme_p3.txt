@@ -1,0 +1,44 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "info_content": {
+      "description": "关联描述",
+      "type": "string"
+    },
+    "linked_hotspots": {
+      "description": "该标的与热门领域的关联性分析",
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "hotspot": {
+            "description": "关联的热门领域",
+            "type": "string"
+          },
+          "pattern": {
+            "description": "关联方式",
+            "type": "string",
+            "enum": [
+              "直接产品",
+              "上游供应链",
+              "上游关键技术",
+              "上游设备",
+              "其他方式直接受益",
+              "下游应用"
+            ]
+          }
+        },
+        "required": [
+          "hotspot",
+          "pattern"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "info_content",
+    "linked_hotspots"
+  ],
+  "type": "object"
+}

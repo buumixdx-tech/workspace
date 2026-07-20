@@ -1,0 +1,21 @@
+{
+  "voucher_no": "CSH-11-78B168",
+  "ref_vc_id": 20,
+  "ref_type": "CashFlow",
+  "ref_id": 11,
+  "timestamp": "2026-05-15T00:00:00",
+  "entries": [
+    {
+      "account": "应付账款 (供应商) - 应付账款 (供应商) - 华迈环保",
+      "debit": 184.0,
+      "credit": 0.0,
+      "summary": "核销应付"
+    },
+    {
+      "account": "货币资金 - 货币资金 - 中国银行天津凯旋支行 (5749)",
+      "debit": 0,
+      "credit": 184.0,
+      "summary": "支付资金 (履约)"
+    }
+  ]
+}

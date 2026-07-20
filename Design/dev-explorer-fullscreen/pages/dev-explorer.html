@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dev Explorer — TRAE IDE</title>
+    <style id="theme-vars">
+﻿/**
+ * Trae design library tokens
+ * Dark-only colors and typography tokens.
+ * Source references:
+ * - /workspace/.uploads/c7804cd9-3301-4b42-8895-bb409861b29a_trae.md
+ * - /workspace/.uploads/3164f329-b5a1-42ba-9dcb-5f1b36b48506_trae.css
+ *
+ * Notes:
+ * - Token values are preserved from the source files.
+ * - Grouping is preserved.
+ * - No alias layer is included.
+ * - Invalid source token names that contained spaces were normalized to kebab-case.
+ *   The original source names are kept in comments.
+ */
+
+/* @dark-only */
+/* @group-priority: brand-green, status, brand-blue, brand-purple, brand-yellow */
+
+:root {
+  /* radius */
+  --radius-2: 2px;
+  --radius-4: 4px;
+  --radius-6: 6px;
+  --radius-8: 8px;
+  --radius-10: 10px;
+  --radius-full: 9999px;
+
+  /* spacers */
+  --spacer-0: 0px;
+  --spacer-4: 4px;
+  --spacer-6: 6px;
+  --spacer-8: 8px;
+  --spacer-12: 12px;
+  --spacer-16: 16px;
+  --spacer-24: 24px;
+  --spacer-32: 32px;
+  --spacer-40: 40px;
+
+  /* font */
+  --font-family-default: SF Pro Text;
+  --font-family-heading: SF Pro;
+  --font-family-mono: JetBrains Mono;
+  --font-weight-default: 400;
+  --font-weight-code: 450;
+  --font-weight-medium: 500;
+  --font-weight-strong: 600;
+  --font-family-base: var(--font-family-default);
+  --font-family-heading-alias: var(--font-family-heading);
+  --font-family-mono-alias: var(--font-family-mono);
+
+  /* body */
+  --body-xs-font-family: "SF Pro Text", system-ui, -apple-system, sans-serif;
+  --body-xs-font-size: 10px;
+  --body-xs-font-weight: 400;
+  --body-xs-line-height: 14px;
+  --body-sm-font-family: "SF Pro Text", system-ui, -apple-system, sans-serif;
+  --body-sm-font-size: 11px;
+  --body-sm-font-weight: 400;
+  --body-sm-line-height: 16px;
+  --body-sm-strong-font-family: "SF Pro Text", system-ui, -apple-system, sans-serif;
+  --body-sm-strong-font-size: 11px;
+  --body-sm-strong-font-weight: 500;
+  --body-sm-strong-line-height: 16px;
+  --body-md-font-family: "SF Pro Text", system-ui, -apple-system, sans-serif;
+  --body-md-font-size: 12px;
+  --body-md-font-weight: 400;
+  --body-md-line-height: 18px;
+  --body-md-strong-font-family: "SF Pro Text", system-ui, -apple-system, sans-serif;
+  --body-md-strong-font-size: 12px;
+  --body-md-strong-font-weight: 500;
+  --body-md-strong-line-height: 18px;
+  --body-base-font-family: "SF Pro Text", system-ui, -apple-system, sans-serif;
+  --body-base-font-size: 13px;
+  --body-base-font-weight: 400;
+  --body-base-line-height: 20px;
+  --body-base-strong-font-family: "SF Pro Text", system-ui, -apple-system, sans-serif;
+  --body-base-strong-font-size: 13px;
+  --body-base-strong-font-weight: 500;
+  --body-base-strong-line-height: 20px;
+
+  /* heading */
+  --heading-3xs-font-family: "SF Pro Text", system-ui, -apple-system, sans-serif;
+  --heading-3xs-font-size: 11px;
+  --heading-3xs-font-weight: 600;
+  --heading-3xs-line-height: 16px;
+  --heading-2xs-font-family: "SF Pro Text", system-ui, -apple-system, sans-serif;
+  --heading-2xs-font-size: 12px;
+  --heading-2xs-font-weight: 600;
+  --heading-2xs-line-height: 18px;
+  --heading-xs-font-family: "SF Pro Text", system-ui, -apple-system, sans-serif;
+  --heading-xs-font-size: 13px;
+  --heading-xs-font-weight: 600;
+  --heading-xs-line-height: 20px;
+  --heading-sm-font-family: "SF Pro Text", system-ui, -apple-system, sans-serif;
+  --heading-sm-font-size: 16px;
+  --heading-sm-font-weight: 600;
+  --heading-sm-line-height: 24px;
+  --heading-md-font-family: "SF Pro", system-ui, -apple-system, sans-serif;
+  --heading-md-font-size: 20px;
+  --heading-md-font-weight: 600;
+  --heading-md-line-height: 28px;
+  --heading-lg-font-family: "SF Pro", system-ui, -apple-system, sans-serif;
+  --heading-lg-font-size: 22px;
+  --heading-lg-font-weight: 600;
+  --heading-lg-line-height: 30px;
+  --heading-xl-font-family: "SF Pro", system-ui, -apple-system, sans-serif;
+  --heading-xl-font-size: 24px;
+  --heading-xl-font-weight: 600;
+  --heading-xl-line-height: 32px;
+  --heading-2xl-font-family: "SF Pro", system-ui, -apple-system, sans-serif;
+  --heading-2xl-font-size: 28px;
+  --heading-2xl-font-weight: 600;
+  --heading-2xl-line-height: 36px;
+  --heading-3xl-font-family: "SF Pro", system-ui, -apple-system, sans-serif;
+  --heading-3xl-font-size: 32px;
+  --heading-3xl-font-weight: 600;
+  --heading-3xl-line-height: 40px;
+
+  /* code */
+  --code-editor-font-family: "JetBrains Mono", system-ui, -apple-system, sans-serif;
+  --code-editor-font-size: 13px;
+  --code-editor-font-weight: 450;
+  --code-editor-line-height: 20px;
+  --code-terminal-font-family: "JetBrains Mono", system-ui, -apple-system, sans-serif;
+  --code-terminal-font-size: 12px;
+  --code-terminal-font-weight: 450;
+  --code-terminal-line-height: 18px;
+  --code-text: #E0E3EE;
+  --code-doc: #7F838C;
+  --code-link: #3C7EFF;
+  --code-number: #F48CCA;
+  --code-action: #B38CFF;
+  --code-instruction: #F0D8FF;
+  --code-function: #F29D79;
+  --code-constant: #80BBFF;
+  --code-parameter: #82D99F;
+  --code-attribute: #DED47E;
+  --code-tag: #F2858C;
+
+  /* bg */
+  --bg-base-default: #1A1B1D;
+  --bg-base-secondary: #222427;
+  --bg-base-tertiary: #2A2D31;
+  --bg-overlay-l1: rgba(224, 226, 242, 0.04);
+  --bg-overlay-l2: rgba(224, 226, 242, 0.06);
+  --bg-overlay-l3: rgba(224, 226, 242, 0.08);
+  --bg-overlay-l4: rgba(224, 226, 242, 0.12);
+  --bg-menu: #202123;
+  --bg-tooltip: #1A1B1D;
+  --bg-invert: #DADDE5;
+  --bg-invert-hover: #EDEFF2;
+  --bg-invert-active: #979AA4;
+  --bg-invert-disabled: rgba(224, 226, 242, 0.12);
+  --color-background: var(--bg-base-default);
+  --color-surface: var(--bg-base-secondary);
+  --color-surface-variant: var(--bg-base-tertiary);
+  --color-overlay-1: var(--bg-overlay-l1);
+  --color-overlay-2: var(--bg-overlay-l2);
+  --color-overlay-3: var(--bg-overlay-l3);
+  --color-overlay-4: var(--bg-overlay-l4);
+  --color-card: var(--bg-base-secondary);
+  --color-tooltip: var(--bg-tooltip);
+  --color-menu: var(--bg-menu);
+
+  /* bg-brand */
+  --bg-brand: #32F08C;
+  --bg-brand-hover: #0FDC78;
+  --bg-brand-disabled: rgba(50, 240, 140, 0.2);
+  --bg-brand-popup: rgba(50, 240, 140, 0.12);
+  --color-primary: var(--bg-brand);
+  --color-primary-hover: var(--bg-brand-hover);
+  --color-primary-disabled: var(--bg-brand-disabled);
+  --color-primary-soft: var(--bg-brand-popup);
+  --color-accent: var(--bg-brand);
+
+  /* text */
+  --text-default: #D1D3DB;
+  --text-default-hover: #F5F9FE;
+  --text-default-active: #F5F9FE;
+  --text-secondary: #9599A6;
+  --text-secondary-hover: #D1D3DB;
+  --text-secondary-active: #D1D3DB;
+  --text-tertiary: #666B75;
+  --text-disabled: #666B75;
+  --text-onbrand: #0C0C0D;
+  --text-onaccent: #0C0C0D;
+  --color-foreground: var(--text-default);
+  --color-foreground-hover: var(--text-default-hover);
+  --color-on-surface: var(--text-default);
+  --color-on-surface-variant: var(--text-secondary);
+  --color-muted-foreground: var(--text-secondary);
+  --color-disabled-foreground: var(--text-disabled);
+  --color-on-primary: var(--text-onbrand);
+
+  /* text-brand */
+  --text-brand: #32F08C;
+  --text-brand-hover: #0FDC78;
+
+  /* icon */
+  --icon-default: #D1D3DB;
+  --icon-default-hover: #F5F9FE;
+  --icon-default-active: #F5F9FE;
+  --icon-secondary: #9599A6;
+  --icon-secondary-hover: #D1D3DB;
+  --icon-secondary-active: #D1D3DB;
+  --icon-tertiary: #666B75;
+  --icon-disabled: #666B75;
+  --icon-onbrand: #0C0C0D;
+  --icon-onaccent: #0C0C0D;
+
+  /* icon-brand */
+  --icon-brand: #32F08C;
+  --icon-brand-hover: #0FDC78;
+
+  /* border */
+  --border-neutral-l1: rgba(224, 226, 242, 0.1);
+  --border-neutral-l2: rgba(224, 226, 242, 0.16);
+  --border-neutral-l3: rgba(224, 226, 242, 0.2);
+  --border-contrast: #FFFFFF;
+  --border-brand: #32F08C;
+  --color-border: var(--border-neutral-l1);
+  --color-border-strong: var(--border-neutral-l2);
+  --color-border-stronger: var(--border-neutral-l3);
+  --color-border-contrast: var(--border-contrast);
+  --color-outline: var(--border-neutral-l1);
+
+  /* accent */
+  --accent-teal: #2DD288;
+  --accent-coral: #FF9392;
+  --accent-amber: #DCB364;
+  --accent-lime: #8ACB3A;
+  --accent-cyan: #04CBE5;
+  --accent-blue: #7BB8FF;
+  --accent-magenta: #EC93FF;
+  --accent-violet: #BFA5FF;
+  --accent-slate: #AFB9CF;
+
+  /* status */
+  --status-primary-default: #387BFF;
+  --status-primary-hover: #4C88FF;
+  --status-primary-active: #1759DD;
+  --status-primary-surface-l1: rgba(53, 121, 255, 0.18);
+  --status-primary-surface-l2: rgba(53, 121, 255, 0.28);
+  --status-primary-surface-l3: rgba(53, 121, 255, 0.36);
+  --status-success-default: #33C192;
+  --status-success-hover: #5ED4AD;
+  --status-success-active: #27B082;
+  --status-success-surface-l1: rgba(0, 165, 110, 0.18);
+  --status-success-surface-l2: rgba(0, 165, 110, 0.28);
+  --status-success-surface-l3: rgba(0, 165, 110, 0.36);
+  --status-alert-default: #D29D00;
+  --status-alert-hover: #DFB949;
+  --status-alert-active: #AB8820;
+  --status-alert-surface-l1: rgba(210, 157, 0, 0.16);
+  --status-alert-surface-l2: rgba(210, 157, 0, 0.28);
+  --status-alert-surface-l3: rgba(210, 157, 0, 0.36);
+  --status-warning-default: #D27E24;
+  --status-warning-hover: #D78B28;
+  --status-warning-active: #B46510;
+  --status-warning-surface-l1: rgba(210, 126, 36, 0.16);
+  --status-warning-surface-l2: rgba(210, 126, 36, 0.28);
+  --status-warning-surface-l3: rgba(210, 126, 36, 0.36);
+  --status-error-default: #F65A5A;
+  --status-error-hover: #F86262;
+  --status-error-active: #B33636;
+  --status-error-surface-l1: rgba(246, 70, 70, 0.18);
+  --status-error-surface-l2: rgba(246, 70, 70, 0.28);
+  --status-error-surface-l3: rgba(246, 70, 70, 0.36);
+  --color-info: var(--status-primary-default);
+  --color-success: var(--status-success-default);
+  --color-warning: var(--status-warning-default);
+  --color-error: var(--status-error-default);
+  --color-error-soft: var(--status-error-surface-l1);
+
+  /* brand */
+  --brand-green-100: #E5FFF2;
+  --brand-green-200: #B4FDD9;
+  --brand-green-300: #85FABF;
+  --brand-green-400: #5CF5A8;
+  --brand-green-500: #32F08C;
+  --brand-green-600: #0FDC78;
+  --brand-green-700: #0AB861;
+  --brand-green-800: #05994F;
+  --brand-green-900: #02743B;
+  --brand-green-1000: #004D26;
+  --brand-red-100: #FFE5E5;
+  --brand-red-200: #FFCCCC;
+  --brand-red-300: #FFB2B2;
+  --brand-red-400: #FF9999;
+  --brand-red-500: #FF8080;
+  --brand-red-600: #FF6464;
+  --brand-red-700: #E63737;
+  --brand-red-800: #CB1010;
+  --brand-red-900: #8F0505;
+  --brand-red-1000: #4D0000;
+  --brand-yellow-100: #FFF6E5;
+  --brand-yellow-200: #FFECCC;
+  --brand-yellow-300: #FFE3B2;
+  --brand-yellow-400: #FFDA99;
+  --brand-yellow-500: #FFD080;
+  --brand-yellow-600: #FFC864;
+  --brand-yellow-700: #E6A637;
+  --brand-yellow-800: #CB8710;
+  --brand-yellow-900: #8F5C05;
+  --brand-yellow-1000: #4D3000;
+  --brand-blue-100: #E5F3FF;
+  --brand-blue-200: #CCE6FF;
+  --brand-blue-300: #B2DAFF;
+  --brand-blue-400: #99CEFF;
+  --brand-blue-500: #80C1FF;
+  --brand-blue-600: #64B4FF;
+  --brand-blue-700: #3792E6;
+  --brand-blue-800: #1071CB;
+  --brand-blue-900: #054C8F;
+  --brand-blue-1000: #00284D;
+  --brand-purple-100: #E8E5FF;
+  --brand-purple-200: #D2CCFF;
+  --brand-purple-300: #BBB2FF;
+  --brand-purple-400: #A599FF;
+  --brand-purple-500: #8E80FF;
+  --brand-purple-600: #7864FF;
+  --brand-purple-700: #4C37E6;
+  --brand-purple-800: #2610CB;
+  --brand-purple-900: #15058F;
+  --brand-purple-1000: #09004D;
+  /* original source token: --brand-neutral grey-100 */
+  --brand-neutral-grey-100: #F2F2F2;
+  /* original source token: --brand-neutral grey-200 */
+  --brand-neutral-grey-200: #E3E3E3;
+  /* original source token: --brand-neutral grey-300 */
+  --brand-neutral-grey-300: #D6D6D6;
+  /* original source token: --brand-neutral grey-400 */
+  --brand-neutral-grey-400: #C7C7C7;
+  /* original source token: --brand-neutral grey-500 */
+  --brand-neutral-grey-500: #BABABA;
+  /* original source token: --brand-neutral grey-600 */
+  --brand-neutral-grey-600: #ABABAB;
+  /* original source token: --brand-neutral grey-700 */
+  --brand-neutral-grey-700: #8A8A8A;
+  /* original source token: --brand-neutral grey-800 */
+  --brand-neutral-grey-800: #686868;
+  /* original source token: --brand-neutral grey-900 */
+  --brand-neutral-grey-900: #474747;
+  /* original source token: --brand-neutral grey-1000 */
+  --brand-neutral-grey-1000: #262626;
+  /* original source token: --brand-blue grey-100 */
+  --brand-blue-grey-100: #F1EFF4;
+  /* original source token: --brand-blue grey-200 */
+  --brand-blue-grey-200: #E0E1E6;
+  /* original source token: --brand-blue grey-300 */
+  --brand-blue-grey-300: #CFD3D8;
+  /* original source token: --brand-blue grey-400 */
+  --brand-blue-grey-400: #BFC5CA;
+  /* original source token: --brand-blue grey-500 */
+  --brand-blue-grey-500: #B0B5BA;
+  /* original source token: --brand-blue grey-600 */
+  --brand-blue-grey-600: #A0A6AB;
+  /* original source token: --brand-blue grey-700 */
+  --brand-blue-grey-700: #80898E;
+  /* original source token: --brand-blue grey-800 */
+  --brand-blue-grey-800: #5E696E;
+  /* original source token: --brand-blue grey-900 */
+  --brand-blue-grey-900: #404A4F;
+  /* original source token: --brand-blue grey-1000 */
+  --brand-blue-grey-1000: #21262B;
+  /* original source token: --brand-green grey-100 */
+  --brand-green-grey-100: #F1F4F4;
+  /* original source token: --brand-green grey-200 */
+  --brand-green-grey-200: #E0E6E6;
+  /* original source token: --brand-green grey-300 */
+  --brand-green-grey-300: #CFD8D8;
+  /* original source token: --brand-green grey-400 */
+  --brand-green-grey-400: #BFCACA;
+  /* original source token: --brand-green grey-500 */
+  --brand-green-grey-500: #B0BABA;
+  /* original source token: --brand-green grey-600 */
+  --brand-green-grey-600: #A0ABAB;
+  /* original source token: --brand-green grey-700 */
+  --brand-green-grey-700: #808E8E;
+  /* original source token: --brand-green grey-800 */
+  --brand-green-grey-800: #5E6E6E;
+  /* original source token: --brand-green grey-900 */
+  --brand-green-grey-900: #404F4F;
+  /* original source token: --brand-green grey-1000 */
+  --brand-green-grey-1000: #212B2B;
+
+  /* font (generic fallback — used by a few preview sections) */
+  --font-family: "SF Pro Text", system-ui, -apple-system, sans-serif;
+  --font-size: 10px;
+  --font-weight: 400;
+  --line-height: 14px;
+
+  /* viz */
+  --viz-series-coral: #F87454;
+  --viz-series-amber: #EDAA45;
+  --viz-series-mint: #1DC981;
+  --viz-series-teal: #78F2F2;
+  --viz-series-sky: #22A5F7;
+  --viz-series-violet: #B655FC;
+  --viz-series-magenta: #FB9DD7;
+  --viz-series-indigo: #B6A3FF;
+  --viz-series-lime: #A6EA39;
+  --viz-series-slate: #859EAD;
+  --viz-ui-bg-chart: #202123;
+  --viz-ui-bg-tooltip: #1A1B1D;
+  --viz-ui-chart-title: #D1D3DB;
+  --viz-ui-chart-subtitle: #9599A6;
+  --viz-ui-chart-axis: rgba(224, 226, 242, 0.16);
+  --viz-ui-chart-tick: #9599A6;
+  --viz-ui-legend-label: #9599A6;
+  --viz-ui-legend-value: #D1D3DB;
+
+  /* special */
+  --special-white: #FFFFFF;
+  --special-black: #000000;
+  --special-bgtabsoverlay: rgba(0, 0, 0, 0.2);
+
+  /* layout aliases (originally fallback in _preview.css) */
+  --brand-1: #32f08c;
+  --brand-2: #3ee1a3;
+  --brand-3: #60f2bd;
+  --brand-4: #a0fde7;
+  --site-canvas: #1A1B1D;
+  --bg-layout-1: var(--bg-base-secondary);
+  --bg-layout-2: var(--bg-overlay-l1);
+  --border-1: var(--border-neutral-l1);
+}
+
+
+/**
+ * Project-level semantic aliases for TRAE design system.
+ * Bridges TRAE token names (--bg-*, --text-*, --icon-*, --border-*, --radius-*)
+ * to standard semantic token names expected by the HTML framework.
+ */
+
+:root {
+  /* Color semantic mappings */
+  --color-background: var(--bg-base-default);
+  --color-foreground: var(--text-default);
+  --color-muted: var(--text-secondary);
+  --color-muted-foreground: var(--text-tertiary);
+  --color-card: var(--bg-base-secondary);
+  --color-card-foreground: var(--text-default);
+  --color-popover: var(--bg-menu);
+  --color-popover-foreground: var(--text-default);
+  --color-primary: var(--bg-brand);
+  --color-primary-foreground: var(--text-onbrand);
+  --color-secondary: var(--bg-base-tertiary);
+  --color-secondary-foreground: var(--text-default);
+  --color-accent: var(--bg-brand);
+  --color-accent-foreground: var(--text-onbrand);
+  --color-destructive: var(--status-error-default);
+  --color-destructive-foreground: #ffffff;
+  --color-border: var(--border-neutral-l1);
+  --color-input: var(--border-neutral-l2);
+  --color-ring: var(--border-brand);
+  --color-surface: var(--bg-base-secondary);
+  --color-surface-variant: var(--bg-base-tertiary);
+
+  /* Radius semantic mappings (standard + color-prefixed for fill-html-head.mjs compatibility) */
+  --radius-sm: var(--radius-2);
+  --radius-md: var(--radius-4);
+  --radius-lg: var(--radius-6);
+  --radius-xl: var(--radius-8);
+  --radius-2xl: var(--radius-10);
+  --radius-full: var(--radius-full);
+  --color-radius-sm: var(--radius-2);
+  --color-radius-md: var(--radius-4);
+  --color-radius-lg: var(--radius-6);
+
+  /* Spacing semantic mappings */
+  --space-1: var(--spacer-4);
+  --space-2: var(--spacer-8);
+  --space-3: var(--spacer-12);
+  --space-4: var(--spacer-16);
+  --space-6: var(--spacer-24);
+  --space-8: var(--spacer-32);
+  --space-10: var(--spacer-40);
+
+  /* Status semantic mappings */
+  --color-success: var(--status-success-default);
+  --color-warning: var(--status-warning-default);
+  --color-error: var(--status-error-default);
+  --color-info: var(--status-primary-default);
+}
+
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--color-background);
+    --color-foreground: var(--color-foreground);
+    --color-card: var(--color-card);
+    --color-card-foreground: var(--color-card-foreground);
+    --color-popover: var(--color-popover);
+    --color-popover-foreground: var(--color-popover-foreground);
+    --color-primary: var(--color-primary);
+    --color-primary-foreground: var(--color-primary-foreground);
+    --color-secondary: var(--color-secondary);
+    --color-secondary-foreground: var(--color-secondary-foreground);
+    --color-muted: var(--color-muted);
+    --color-muted-foreground: var(--color-muted-foreground);
+    --color-accent: var(--color-accent);
+    --color-accent-foreground: var(--color-accent-foreground);
+    --color-destructive: var(--color-destructive);
+    --color-destructive-foreground: var(--color-destructive-foreground);
+    --color-border: var(--color-border);
+    --color-input: var(--color-input);
+    --color-ring: var(--color-ring);
+    --radius-sm: var(--color-radius-sm);
+    --radius-md: var(--color-radius-md);
+    --radius-lg: var(--color-radius-lg);
+  }
+  @layer base {
+    body { background: var(--color-background); color: var(--color-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--color-background); }
+      .text-background { color: var(--color-background); }
+      .border-background { border-color: var(--color-background); }
+      .ring-background { --tw-ring-color: var(--color-background); }
+      .bg-foreground { background-color: var(--color-foreground); }
+      .text-foreground { color: var(--color-foreground); }
+      .border-foreground { border-color: var(--color-foreground); }
+      .ring-foreground { --tw-ring-color: var(--color-foreground); }
+      .bg-card { background-color: var(--color-card); }
+      .text-card { color: var(--color-card); }
+      .border-card { border-color: var(--color-card); }
+      .ring-card { --tw-ring-color: var(--color-card); }
+      .bg-card-foreground { background-color: var(--color-card-foreground); }
+      .text-card-foreground { color: var(--color-card-foreground); }
+      .border-card-foreground { border-color: var(--color-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--color-card-foreground); }
+      .bg-popover { background-color: var(--color-popover); }
+      .text-popover { color: var(--color-popover); }
+      .border-popover { border-color: var(--color-popover); }
+      .ring-popover { --tw-ring-color: var(--color-popover); }
+      .bg-popover-foreground { background-color: var(--color-popover-foreground); }
+      .text-popover-foreground { color: var(--color-popover-foreground); }
+      .border-popover-foreground { border-color: var(--color-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--color-popover-foreground); }
+      .bg-primary { background-color: var(--color-primary); }
+      .text-primary { color: var(--color-primary); }
+      .border-primary { border-color: var(--color-primary); }
+      .ring-primary { --tw-ring-color: var(--color-primary); }
+      .bg-primary-foreground { background-color: var(--color-primary-foreground); }
+      .text-primary-foreground { color: var(--color-primary-foreground); }
+      .border-primary-foreground { border-color: var(--color-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--color-primary-foreground); }
+      .bg-secondary { background-color: var(--color-secondary); }
+      .text-secondary { color: var(--color-secondary); }
+      .border-secondary { border-color: var(--color-secondary); }
+      .ring-secondary { --tw-ring-color: var(--color-secondary); }
+      .bg-secondary-foreground { background-color: var(--color-secondary-foreground); }
+      .text-secondary-foreground { color: var(--color-secondary-foreground); }
+      .border-secondary-foreground { border-color: var(--color-secondary-foreground); }
+      .ring-secondary-foreground { --tw-ring-color: var(--color-secondary-foreground); }
+      .bg-muted { background-color: var(--color-muted); }
+      .text-muted { color: var(--color-muted); }
+      .border-muted { border-color: var(--color-muted); }
+      .ring-muted { --tw-ring-color: var(--color-muted); }
+      .bg-muted-foreground { background-color: var(--color-muted-foreground); }
+      .text-muted-foreground { color: var(--color-muted-foreground); }
+      .border-muted-foreground { border-color: var(--color-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--color-muted-foreground); }
+      .bg-accent { background-color: var(--color-accent); }
+      .text-accent { color: var(--color-accent); }
+      .border-accent { border-color: var(--color-accent); }
+      .ring-accent { --tw-ring-color: var(--color-accent); }
+      .bg-accent-foreground { background-color: var(--color-accent-foreground); }
+      .text-accent-foreground { color: var(--color-accent-foreground); }
+      .border-accent-foreground { border-color: var(--color-accent-foreground); }
+      .ring-accent-foreground { --tw-ring-color: var(--color-accent-foreground); }
+      .bg-destructive { background-color: var(--color-destructive); }
+      .text-destructive { color: var(--color-destructive); }
+      .border-destructive { border-color: var(--color-destructive); }
+      .ring-destructive { --tw-ring-color: var(--color-destructive); }
+      .bg-destructive-foreground { background-color: var(--color-destructive-foreground); }
+      .text-destructive-foreground { color: var(--color-destructive-foreground); }
+      .border-destructive-foreground { border-color: var(--color-destructive-foreground); }
+      .ring-destructive-foreground { --tw-ring-color: var(--color-destructive-foreground); }
+      .bg-border { background-color: var(--color-border); }
+      .text-border { color: var(--color-border); }
+      .border-border { border-color: var(--color-border); }
+      .ring-border { --tw-ring-color: var(--color-border); }
+      .bg-input { background-color: var(--color-input); }
+      .text-input { color: var(--color-input); }
+      .border-input { border-color: var(--color-input); }
+      .ring-input { --tw-ring-color: var(--color-input); }
+      .bg-ring { background-color: var(--color-ring); }
+      .text-ring { color: var(--color-ring); }
+      .border-ring { border-color: var(--color-ring); }
+      .ring-ring { --tw-ring-color: var(--color-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    /* Icon components — static src paths */
+    const I = {
+      chevronDown:   () => <img src="../assets/icons/dl_builtin_trae/chevron-down.svg"  width="14" height="14" alt="" />,
+      chevronDownSm: () => <img src="../assets/icons/dl_builtin_trae/chevron-down.svg"  width="12" height="12" alt="" />,
+      chevronRight:  () => <img src="../assets/icons/dl_builtin_trae/chevron-right.svg" width="14" height="14" alt="" />,
+      chevronRightSm:() => <img src="../assets/icons/dl_builtin_trae/chevron-right.svg" width="10" height="10" alt="" />,
+      chevronUp:     () => <img src="../assets/icons/dl_builtin_trae/chevron-up.svg"    width="12" height="12" alt="" />,
+      arrowLeft:     () => <img src="../assets/icons/dl_builtin_trae/arrow-left.svg"    width="16" height="16" alt="back" />,
+      arrowRight:    () => <img src="../assets/icons/dl_builtin_trae/arrow-right.svg"   width="16" height="16" alt="forward" />,
+      search:        () => <img src="../assets/icons/dl_builtin_trae/search.svg"        width="14" height="14" alt="search" />,
+      searchSm:      () => <img src="../assets/icons/dl_builtin_trae/search.svg"        width="12" height="12" alt="search" />,
+      sidebarLeft:   () => <img src="../assets/icons/dl_builtin_trae/sidebar-left.svg"  width="16" height="16" alt="left panel" />,
+      panelBottom:   () => <img src="../assets/icons/dl_builtin_trae/panel-bottom.svg"  width="16" height="16" alt="bottom panel" />,
+      sidebarRight:  () => <img src="../assets/icons/dl_builtin_trae/sidebar-right.svg" width="16" height="16" alt="right panel" />,
+      user:          () => <img src="../assets/icons/dl_builtin_trae/user.svg"          width="14" height="14" alt="user" />,
+      userCircle:    () => <img src="../assets/icons/dl_builtin_trae/user-circle.svg"   width="18" height="18" alt="user" />,
+      files:         () => <img src="../assets/icons/dl_builtin_trae/files.svg"         width="18" height="18" alt="files" />,
+      searchMenu:    () => <img src="../assets/icons/dl_builtin_trae/search-menu.svg"   width="18" height="18" alt="search" />,
+      git:           () => <img src="../assets/icons/dl_builtin_trae/git.svg"           width="18" height="18" alt="git" />,
+      gitSm:         () => <img src="../assets/icons/dl_builtin_trae/git.svg"           width="12" height="12" alt="git" />,
+      bug:           () => <img src="../assets/icons/dl_builtin_trae/bug.svg"           width="18" height="18" alt="run" />,
+      eye:           () => <img src="../assets/icons/dl_builtin_trae/eye.svg"           width="18" height="18" alt="watcher" />,
+      grid:          () => <img src="../assets/icons/dl_builtin_trae/extensions.svg"    width="18" height="18" alt="extensions" />,
+      moreH:         () => <img src="../assets/icons/dl_builtin_trae/more-h.svg"        width="14" height="14" alt="more" />,
+      plus:          () => <img src="../assets/icons/dl_builtin_trae/plus.svg"          width="12" height="12" alt="new" />,
+      plusMd:        () => <img src="../assets/icons/dl_builtin_trae/plus.svg"          width="14" height="14" alt="new" />,
+      folder:        () => <img src="../assets/icons/dl_builtin_trae/folder.svg"        width="14" height="14" alt="folder" />,
+      folderSm:      () => <img src="../assets/icons/dl_builtin_trae/folder.svg"        width="12" height="12" alt="folder" />,
+      file:          () => <img src="../assets/icons/dl_builtin_trae/file.svg"          width="14" height="14" alt="file" />,
+      fileSm:        () => <img src="../assets/icons/dl_builtin_trae/file.svg"          width="12" height="12" alt="file" />,
+      fileText:      () => <img src="../assets/icons/dl_builtin_trae/file-text.svg"     width="14" height="14" alt="file" />,
+      refresh:       () => <img src="../assets/icons/dl_builtin_trae/refresh.svg"       width="12" height="12" alt="refresh" />,
+      refreshMd:     () => <img src="../assets/icons/dl_builtin_trae/refresh.svg"       width="14" height="14" alt="refresh" />,
+      minus:         () => <img src="../assets/icons/dl_builtin_trae/minus.svg"         width="12" height="12" alt="collapse" />,
+      x:             () => <img src="../assets/icons/dl_builtin_trae/x.svg"             width="10" height="10" alt="close" />,
+      xMd:           () => <img src="../assets/icons/dl_builtin_trae/x.svg"             width="14" height="14" alt="close" />,
+      layout:        () => <img src="../assets/icons/dl_builtin_trae/layout.svg"        width="14" height="14" alt="layout" />,
+      columns:       () => <img src="../assets/icons/dl_builtin_trae/columns.svg"       width="14" height="14" alt="split" />,
+      settings:      () => <img src="../assets/icons/dl_builtin_trae/settings.svg"      width="14" height="14" alt="settings" />,
+      settingsMd:    () => <img src="../assets/icons/dl_builtin_trae/settings.svg"      width="16" height="16" alt="settings" />,
+      at:            () => <img src="../assets/icons/dl_builtin_trae/at.svg"            width="16" height="16" alt="mention" />,
+      hash:          () => <img src="../assets/icons/dl_builtin_trae/hash.svg"          width="16" height="16" alt="reference" />,
+      image:         () => <img src="../assets/icons/dl_builtin_trae/image.svg"         width="16" height="16" alt="attach image" />,
+      mic:           () => <img src="../assets/icons/dl_builtin_trae/mic.svg"           width="16" height="16" alt="mic" />,
+      send:          () => <img src="../assets/icons/dl_builtin_trae/send.0c0c0d.svg"   width="16" height="16" alt="send" />,
+      arrowUp:       () => <img src="../assets/icons/dl_builtin_trae/arrow-up.0c0c0d.svg" width="16" height="16" alt="send" />,
+      messageCircle: () => <img src="../assets/icons/dl_builtin_trae/message-circle.svg" width="14" height="14" alt="" />,
+      bell:          () => <img src="../assets/icons/dl_builtin_trae/bell.svg"          width="12" height="12" alt="bell" />,
+      atom:          () => <img src="../assets/icons/dl_builtin_trae/atom.0c0c0d.svg"   width="14" height="14" alt="atom" />,
+      sparkles:      () => <img src="../assets/icons/dl_builtin_trae/sparkles.svg"      width="14" height="14" alt="sparkles" />,
+      zap:           () => <img src="../assets/icons/dl_builtin_trae/zap.svg"           width="14" height="14" alt="zap" />,
+      checkCircle:   () => <img src="../assets/icons/dl_builtin_trae/check-circle.svg"  width="12" height="12" alt="check" />,
+      code:          () => <img src="../assets/icons/dl_builtin_trae/code.svg"          width="12" height="12" alt="code" />,
+    };
+
+    /* ========== Titlebar ========== */
+    function Titlebar({ panel, setPanel }) {
+      return (
+        <header className="ds-wbtitlebar" data-component="workbench-titlebar">
+          <div className="ds-wbtitlebar__left">
+            <div className="ds-wbtitlebar__lights" aria-hidden="true">
+              <span className="ds-wbtitlebar__light ds-wbtitlebar__light--close"></span>
+              <span className="ds-wbtitlebar__light ds-wbtitlebar__light--min"></span>
+              <span className="ds-wbtitlebar__light ds-wbtitlebar__light--max"></span>
+            </div>
+            <span className="ds-wbtitlebar__mode-chip">
+              <I.atom />
+              <span>Agent Mode</span>
+            </span>
+            <button className="ds-wbtitlebar__project-selector" type="button">
+              <I.folder />
+              <span>trae-design-system</span>
+              <I.chevronDown />
+            </button>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginLeft: 4 }}>
+              <button className="ds-wbtitlebar__iconbtn" aria-label="Back"><I.arrowLeft /></button>
+              <button className="ds-wbtitlebar__iconbtn" aria-label="Forward"><I.arrowRight /></button>
+            </span>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0 8px', height: 24, background: 'var(--bg-overlay-l1)', border: '1px solid var(--border-neutral-l2)', borderRadius: 'var(--radius-6)', minWidth: 160 }}>
+              <I.searchSm />
+              <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>Search files…</span>
+            </div>
+          </div>
+          <div className="ds-wbtitlebar__right">
+            <button
+              className={"ds-wbtitlebar__iconbtn" + (panel.left ? " is-active" : "")}
+              aria-pressed={panel.left}
+              aria-label="Toggle sidebar"
+              onClick={() => setPanel({ ...panel, left: !panel.left })}
+            ><I.sidebarLeft /></button>
+            <button className="ds-wbtitlebar__iconbtn" aria-label="Toggle panel"><I.panelBottom /></button>
+            <button
+              className={"ds-wbtitlebar__iconbtn" + (panel.right ? " is-active" : "")}
+              aria-pressed={panel.right}
+              aria-label="Toggle chat"
+              onClick={() => setPanel({ ...panel, right: !panel.right })}
+            ><I.sidebarRight /></button>
+            <span className="ds-avatar ds-avatar--sm" style={{ marginLeft: 4 }}>
+              <I.user />
+            </span>
+          </div>
+        </header>
+      );
+    }
+
+    /* ========== Activity Bar ========== */
+    function ActivityBar({ active, setActive }) {
+      const items = [
+        { id: 'files',   icon: <I.files/>,      label: 'Explorer' },
+        { id: 'search',  icon: <I.searchMenu/>, label: 'Search' },
+        { id: 'git',     icon: <I.git/>,        label: 'Source Control' },
+        { id: 'run',     icon: <I.bug/>,        label: 'Run & Debug' },
+        { id: 'watch',   icon: <I.eye/>,        label: 'Watcher' },
+      ];
+      return (
+        <nav className="ds-activityrail activity-bar" data-component="activity-rail" aria-label="Activity bar">
+          {items.map((it) => (
+            <button
+              key={it.id}
+              className={"ds-activityrail__btn" + (active === it.id ? ' is-active' : '')}
+              aria-label={it.label}
+              aria-pressed={active === it.id}
+              onClick={() => setActive(it.id)}
+            >{it.icon}</button>
+          ))}
+          <div className="ds-activityrail__divider"></div>
+          <button className="ds-activityrail__btn" aria-label="Extensions"><I.grid/></button>
+          <span className="ds-activityrail__spacer"></span>
+          <button className="ds-activityrail__btn" aria-label="Account"><I.userCircle/></button>
+          <button className="ds-activityrail__btn" aria-label="Settings"><I.settingsMd/></button>
+        </nav>
+      );
+    }
+
+    /* ========== Sidebar / File Tree ========== */
+    const TREE = [
+      { d: 0, type: 'folder', label: 'node_modules', chev: 'right' },
+      { d: 0, type: 'folder', label: 'public', chev: 'right' },
+      { d: 0, type: 'folder', label: 'src', chev: 'down' },
+      { d: 1, type: 'folder', label: 'app', chev: 'right' },
+      { d: 1, type: 'folder', label: 'components', chev: 'down' },
+      { d: 2, type: 'tsx', label: 'Button.tsx' },
+      { d: 2, type: 'tsx', label: 'Card.tsx', active: true },
+      { d: 2, type: 'tsx', label: 'Dialog.tsx' },
+      { d: 2, type: 'tsx', label: 'Input.tsx' },
+      { d: 2, type: 'css', label: 'Button.module.css' },
+      { d: 1, type: 'folder', label: 'hooks', chev: 'right' },
+      { d: 1, type: 'folder', label: 'lib', chev: 'right' },
+      { d: 1, type: 'folder', label: 'pages', chev: 'down' },
+      { d: 2, type: 'tsx', label: 'index.tsx' },
+      { d: 2, type: 'tsx', label: 'about.tsx' },
+      { d: 2, type: 'tsx', label: 'docs.tsx' },
+      { d: 1, type: 'tsx', label: 'App.tsx' },
+      { d: 1, type: 'css', label: 'globals.css' },
+      { d: 1, type: 'tsx', label: 'main.tsx' },
+      { d: 1, type: 'ts',  label: 'vite-env.d.ts' },
+      { d: 0, type: 'config', label: '.gitignore' },
+      { d: 0, type: 'js',  label: 'eslint.config.js' },
+      { d: 0, type: 'html',label: 'index.html' },
+      { d: 0, type: 'json',label: 'package-lock.json' },
+      { d: 0, type: 'json',label: 'package.json' },
+      { d: 0, type: 'js',  label: 'postcss.config.mjs' },
+      { d: 0, type: 'md',  label: 'README.md' },
+      { d: 0, type: 'js',  label: 'tailwind.config.mjs' },
+      { d: 0, type: 'json',label: 'tsconfig.json' },
+    ];
+
+    function FileIcon({ type }) {
+      const cls = 'icon-file ic-' + type;
+      const isFolder = type === 'folder';
+      return (
+        <span className={cls}>
+          {isFolder ? <I.folderSm/> : <I.fileSm/>}
+        </span>
+      );
+    }
+
+    function Sidebar({ activeFile, setActiveFile }) {
+      return (
+        <aside className="sidebar" data-component="file-tree">
+          <div className="sidebar__header">
+            <span>Explorer</span>
+            <button className="more" aria-label="More"><I.moreH/></button>
+          </div>
+          <div className="sidebar__group-head">
+            <span className="left">
+              <I.chevronDownSm/>
+              <span>trae-design-system</span>
+            </span>
+            <span className="actions">
+              <button aria-label="New file"><I.plus/></button>
+              <button aria-label="New folder"><I.folderSm/></button>
+              <button aria-label="Refresh"><I.refresh/></button>
+              <button aria-label="Collapse"><I.minus/></button>
+            </span>
+          </div>
+          <div className="tree" role="tree">
+            {TREE.map((row, i) => {
+              const isActive = activeFile === i || (activeFile === null && row.active);
+              return (
+                <div
+                  key={i}
+                  className={"tree__row" + (isActive ? " is-active" : "")}
+                  data-depth={row.d}
+                  role="treeitem"
+                  aria-selected={isActive}
+                  onClick={() => setActiveFile(i)}
+                >
+                  {row.chev === 'down'
+                    ? <span className="chev"><I.chevronDownSm/></span>
+                    : row.chev === 'right'
+                      ? <span className="chev"><I.chevronRightSm/></span>
+                      : <span className="chev is-empty"></span>}
+                  <FileIcon type={row.type === 'folder' ? 'folder' : row.type} />
+                  <span className="label">{row.label}</span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="sidebar__footer">
+            <div className="sidebar__footer-item">
+              <span className="chev"><I.chevronRightSm/></span>
+              <span>Outline</span>
+            </div>
+            <div className="sidebar__footer-item">
+              <span className="chev"><I.chevronRightSm/></span>
+              <span>Timeline</span>
+            </div>
+          </div>
+        </aside>
+      );
+    }
+
+    /* ========== Editor ========== */
+    const TABS = [
+      { id: 'globals', label: 'globals.css',     type: 'css' },
+      { id: 'card',    label: 'Card.tsx',        type: 'tsx', closable: true, active: true },
+      { id: 'button',  label: 'Button.tsx',      type: 'tsx', closable: true },
+      { id: 'tailwind',label: 'tailwind.config.mjs', type: 'js', closable: true },
+    ];
+
+    const CODE_LINES = [
+      { num: 1,  html: <><span className="cmt">{'// Card component — TRAE design system'}</span></> },
+      { num: 2,  html: <><span className="kw">import</span> <span className="const">React</span> <span className="kw">from</span> <span className="str">'react'</span>;</> },
+      { num: 3,  html: <><span className="kw">import</span> <span className="kw">type</span> {`{ `}<span className="type">ReactNode</span>{` }`} <span className="kw">from</span> <span className="str">'react'</span>;</> },
+      { num: 4,  html: '' },
+      { num: 5,  html: <><span className="kw">interface</span> <span className="type">CardProps</span> {'{'}</> },
+      { num: 6,  html: <>  <span className="param">title</span><span className="type">?: string</span>;</> },
+      { num: 7,  html: <>  <span className="param">children</span><span className="type">: ReactNode</span>;</> },
+      { num: 8,  html: <>  <span className="param">variant</span><span className="type">?: 'default' | 'elevated'</span>;</> },
+      { num: 9,  html: {'}'} },
+      { num: 10, html: '' },
+      { num: 11, html: <><span className="kw">export function</span> <span className="fn">Card</span>({`{ `}<span className="param">title</span>, <span className="param">children</span>, <span className="param">variant</span> = <span className="str">'default'</span>{` }: `}<span className="type">CardProps</span>{`) {'}`}</> },
+      { num: 12, html: <>{`  const `}<span className="const">baseClass</span> = <span className="str">'ds-card'</span>;</> },
+      { num: 13, html: <>{`  const `}<span className="const">variantClass</span> = variant === <span className="str">'elevated'</span></> },
+      { num: 14, html: <>    ? <span className="str">'ds-card--elevated'</span></> },
+      { num: 15, html: <>    : <span className="str">''</span>;</> },
+      { num: 16, html: '' },
+      { num: 17, html: <>  <span className="kw">return</span> (</> },
+      { num: 18, html: <>    {'<'}<span className="tag">div</span> <span className="attr">className</span>={<span className="str">`${'{'}baseClass{'}'} ${'{'}variantClass{'}'}`</span>}></> },
+      { num: 19, html: <>      {`{title && (`}</> },
+      { num: 20, html: <>        {'<'}<span className="tag">h3</span> <span className="attr">className</span>=<span className="str">"ds-card__title"</span>{'>'}</> },
+      { num: 21, html: <>          {`{title}`}</> },
+      { num: 22, html: <>        {'</'}<span className="tag">h3</span>{'>'}</> },
+      { num: 23, html: <>      {`)}`}</> },
+      { num: 24, html: <>      {'<'}<span className="tag">div</span> <span className="attr">className</span>=<span className="str">"ds-card__body"</span>{'>'}</> },
+      { num: 25, html: <>        {`{children}`}</> },
+      { num: 26, html: <>      {'</'}<span className="tag">div</span>{'>'}</> },
+      { num: 27, html: <>    {'</'}<span className="tag">div</span>{'>'}</> },
+      { num: 28, html: <>  );</> },
+      { num: 29, html: {'}'} },
+      { num: 30, html: '' },
+      { num: 31, html: <><span className="kw">export default</span> <span className="fn">Card</span>;</> },
+    ];
+
+    function Editor({ tab, setTab }) {
+      return (
+        <main className="editor" data-component="tabs">
+          <div className="ds-editortabs">
+            {TABS.map((t) => {
+              const active = tab === t.id;
+              return (
+                <span
+                  key={t.id}
+                  className={"ds-editortab" + (active ? " is-active" : "")}
+                  onClick={() => setTab(t.id)}
+                  role="tab"
+                  aria-selected={active}
+                >
+                  <span className={"ic ic-" + t.type}><I.file/></span>
+                  <span style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.label}</span>
+                  {t.closable && active && <span className="close"><I.x/></span>}
+                </span>
+              );
+            })}
+            <span className="ds-editortabs__spacer"></span>
+            <span className="ds-editortabs__actions">
+              <button aria-label="Split editor right"><I.columns/></button>
+              <button aria-label="Toggle layout"><I.layout/></button>
+              <button aria-label="More actions"><I.moreH/></button>
+            </span>
+          </div>
+          <div className="editor__content">
+            {CODE_LINES.map((line) => (
+              <div key={line.num} className={"editor__line" + (line.num === 11 ? " is-active" : "")}>
+                <span className="editor__line-num">{line.num}</span>
+                <span className="editor__line-code">{line.html}</span>
+              </div>
+            ))}
+          </div>
+        </main>
+      );
+    }
+
+    /* ========== Chat Panel ========== */
+    function Chat() {
+      return (
+        <aside className="chat" data-component="chat-composer">
+          <div className="chat__head">
+            <span>TRAE</span>
+            <span className="actions">
+              <button aria-label="New chat"><I.plusMd/></button>
+              <button aria-label="History"><I.refreshMd/></button>
+              <button aria-label="Settings"><I.settings/></button>
+              <button aria-label="Close"><I.xMd/></button>
+            </span>
+          </div>
+          <div className="chat__body">
+            <div className="chat__hero">
+              <h1><span>Hi, I&apos;m TRAE.</span> <span className="muted">Let&apos;s build something great.</span></h1>
+            </div>
+            <div className="chat__composer-wrap">
+              <div className="ds-composer" style={{ maxWidth: '100%' }}>
+                <textarea
+                  className="ds-composer__input"
+                  placeholder="Ask anything, or describe what you want to build…"
+                  rows={3}
+                />
+                <div className="ds-composer__toolbar">
+                  <div className="ds-composer__tools">
+                    <button className="ds-composer__icon-btn" type="button" aria-label="Mention"><I.at/></button>
+                    <button className="ds-composer__icon-btn" type="button" aria-label="Reference"><I.hash/></button>
+                    <button className="ds-composer__icon-btn" type="button" aria-label="Attach image"><I.image/></button>
+                    <button className="ds-composer__model" type="button">
+                      <I.sparkles />
+                      <span>Claude 3.5 Sonnet</span>
+                      <I.chevronDown />
+                    </button>
+                  </div>
+                  <div className="ds-composer__actions">
+                    <button className="ds-composer__icon-btn" type="button" aria-label="Mic"><I.mic/></button>
+                    <button className="ds-composer__send" type="button" aria-label="Send">
+                      <I.send />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="chat__past">
+              <span className="chat__past-title">Recent conversations</span>
+              <div className="chat__past-list">
+                <div className="chat__past-item">
+                  <span className="left">
+                    <span className="icon"><I.messageCircle/></span>
+                    <span className="label">Design system component audit</span>
+                  </span>
+                  <span className="ago">2h ago</span>
+                </div>
+                <div className="chat__past-item">
+                  <span className="left">
+                    <span className="icon"><I.messageCircle/></span>
+                    <span className="label">Refactor auth middleware</span>
+                  </span>
+                  <span className="ago">1d ago</span>
+                </div>
+                <div className="chat__past-item">
+                  <span className="left">
+                    <span className="icon"><I.messageCircle/></span>
+                    <span className="label">Set up new project structure</span>
+                  </span>
+                  <span className="ago">3d ago</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      );
+    }
+
+    /* ========== Status Bar ========== */
+    function StatusBar() {
+      return (
+        <footer className="ds-statusbar" data-component="status-bar">
+          <div className="ds-statusbar__group">
+            <span className="ds-statusbar__item">
+              <I.gitSm/>
+              <span>main*</span>
+            </span>
+            <span className="ds-statusbar__item">
+              <span className="ds-statusbar__dot ds-statusbar__dot--success"></span>
+              <span>0</span>
+              <span className="ds-statusbar__dot ds-statusbar__dot--error"></span>
+              <span>0</span>
+            </span>
+            <span className="ds-statusbar__item">
+              <I.checkCircle/>
+              <span>Prettier</span>
+            </span>
+          </div>
+          <div className="ds-statusbar__group">
+            <span className="ds-statusbar__item">Ln 11, Col 17</span>
+            <span className="ds-statusbar__item">Spaces: 2</span>
+            <span className="ds-statusbar__item">UTF-8</span>
+            <span className="ds-statusbar__item">LF</span>
+            <span className="ds-statusbar__item">
+              <I.code/>
+              TypeScript React
+            </span>
+            <span className="ds-statusbar__item">
+              <I.bell/>
+            </span>
+          </div>
+        </footer>
+      );
+    }
+
+    /* ========== App ========== */
+    function App() {
+      const [active, setActive] = useState('files');
+      const [tab, setTab] = useState('card');
+      const [activeFile, setActiveFile] = useState(null);
+      const [panel, setPanel] = useState({ left: true, right: true });
+
+      const cols = [
+        '48px',
+        panel.left ? '260px' : '0px',
+        'minmax(0, 1fr)',
+        panel.right ? 'minmax(0, 480px)' : '0px',
+      ].join(' ');
+
+      return (
+        <div className="ide" data-viewport-mode="app-shell">
+          <Titlebar panel={panel} setPanel={setPanel} />
+          <div className="ide__body" style={{ gridTemplateColumns: cols }}>
+            <ActivityBar active={active} setActive={setActive} />
+            {panel.left && <Sidebar activeFile={activeFile} setActiveFile={setActiveFile} />}
+            <Editor tab={tab} setTab={setTab} />
+            {panel.right && <Chat />}
+          </div>
+          <StatusBar />
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+
+    <style>
+html, body { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; }
+body {
+  background: var(--bg-base-default);
+  color: var(--text-default);
+  font-family: var(--body-base-font-family);
+  font-size: var(--body-base-font-size);
+  line-height: var(--body-base-line-height);
+  font-weight: var(--body-base-font-weight);
+  -webkit-font-smoothing: antialiased;
+}
+#root { height: 100%; width: 100%; }
+* { box-sizing: border-box; }
+img, svg, video, canvas { max-width: 100%; }
+
+/* === IDE shell (fullscreen) === */
+.ide {
+  display: grid;
+  grid-template-rows: 40px 1fr 24px;
+  width: 100vw;
+  height: 100vh;
+  min-width: 0;
+  background: var(--bg-base-secondary);
+  color: var(--text-default);
+  overflow: hidden;
+}
+
+/* === Body grid === */
+.ide__body {
+  display: grid;
+  grid-template-columns: 48px 260px minmax(0, 1fr) minmax(0, 480px);
+  min-height: 0;
+  min-width: 0;
+}
+.ide__body > * { min-width: 0; min-height: 0; }
+
+/* === Activity bar (override ds-activityrail for full-height) === */
+.ide .activity-bar {
+  width: 100%;
+  height: 100%;
+  border-right: 1px solid var(--border-neutral-l1);
+  border-bottom: none;
+}
+
+/* === Sidebar === */
+.ide .sidebar {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-base-default);
+  border-right: 1px solid var(--border-neutral-l1);
+  overflow: hidden;
+  height: 100%;
+}
+.sidebar__header {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 40px; padding: 0 var(--spacer-16);
+  color: var(--text-default);
+  font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border-neutral-l1);
+  flex-shrink: 0;
+}
+.sidebar__header .more {
+  width: 20px; height: 20px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; border: 0; color: var(--icon-secondary);
+  cursor: pointer; border-radius: var(--radius-4);
+}
+.sidebar__header .more:hover { color: var(--icon-default); background: var(--bg-overlay-l2); }
+.sidebar__group-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 4px var(--spacer-16);
+  color: var(--text-default);
+  font-size: 12px; font-weight: 500;
+  height: 28px;
+  flex-shrink: 0;
+}
+.sidebar__group-head .left { display: inline-flex; align-items: center; gap: var(--spacer-6); }
+.sidebar__group-head .actions { display: inline-flex; align-items: center; gap: 2px; color: var(--icon-secondary); }
+.sidebar__group-head .actions button {
+  width: 20px; height: 20px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; border: 0; color: inherit; cursor: pointer;
+  border-radius: var(--radius-4);
+}
+.sidebar__group-head .actions button:hover { color: var(--icon-default); background: var(--bg-overlay-l2); }
+
+.sidebar .tree {
+  display: flex; flex-direction: column;
+  padding: 4px 0 16px;
+  flex: 1; min-height: 0;
+  overflow-y: auto;
+}
+.sidebar .tree__row {
+  display: flex; align-items: center; gap: var(--spacer-6);
+  padding: 0 8px 0 16px; height: 22px;
+  color: var(--text-default);
+  font-size: 12px; line-height: 1;
+  cursor: pointer; white-space: nowrap;
+}
+.sidebar .tree__row:hover { background: var(--bg-overlay-l2); }
+.sidebar .tree__row.is-active { background: var(--bg-overlay-l3); color: var(--text-default-hover); }
+.sidebar .tree__row[data-depth="0"] { padding-left: 16px; }
+.sidebar .tree__row[data-depth="1"] { padding-left: 28px; }
+.sidebar .tree__row[data-depth="2"] { padding-left: 44px; }
+.sidebar .tree__row[data-depth="3"] { padding-left: 60px; }
+.sidebar .tree__row .chev { width: 12px; height: 12px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--icon-tertiary); }
+.sidebar .tree__row .chev.is-empty { visibility: hidden; }
+.sidebar .tree__row .icon-file { width: 14px; height: 14px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--icon-secondary); }
+.sidebar .tree__row .label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+.sidebar__footer { margin-top: auto; display: flex; flex-direction: column; border-top: 1px solid var(--border-neutral-l1); flex-shrink: 0; }
+.sidebar__footer-item {
+  display: flex; align-items: center; gap: var(--spacer-6);
+  padding: 4px var(--spacer-16); height: 28px;
+  color: var(--text-default);
+  font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.sidebar__footer-item:hover { background: var(--bg-overlay-l2); }
+.sidebar__footer-item .chev { color: var(--icon-tertiary); }
+
+/* File-type tints */
+.ic-folder { color: var(--icon-secondary); }
+.ic-tsx, .ic-ts { color: var(--accent-blue); }
+.ic-js { color: var(--code-constant); }
+.ic-css, .ic-md { color: var(--code-attribute); }
+.ic-html { color: var(--accent-coral); }
+.ic-json { color: var(--code-constant); }
+.ic-config { color: var(--icon-tertiary); }
+
+/* === Editor === */
+.ide .editor {
+  display: flex; flex-direction: column;
+  background: var(--bg-base-default);
+  overflow: hidden;
+  height: 100%;
+}
+.editor__content {
+  flex: 1; min-width: 0; min-height: 0;
+  overflow: auto;
+  background: var(--bg-base-default);
+  font-family: var(--code-editor-font-family);
+  font-size: var(--code-editor-font-size);
+  line-height: var(--code-editor-line-height);
+  font-weight: var(--code-editor-font-weight);
+  padding: var(--spacer-16) 0;
+}
+.editor__line {
+  display: flex;
+  min-height: var(--code-editor-line-height);
+}
+.editor__line-num {
+  width: 52px;
+  flex-shrink: 0;
+  text-align: right;
+  padding-right: var(--spacer-12);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+.editor__line-code {
+  flex: 1;
+  min-width: 0;
+  padding-right: var(--spacer-16);
+  color: var(--code-text);
+  white-space: pre;
+}
+.editor__line-code .kw { color: var(--code-action); }
+.editor__line-code .fn { color: var(--code-function); }
+.editor__line-code .str { color: var(--code-parameter); }
+.editor__line-code .num { color: var(--code-number); }
+.editor__line-code .cmt { color: var(--code-doc); font-style: italic; }
+.editor__line-code .tag { color: var(--code-tag); }
+.editor__line-code .attr { color: var(--code-attribute); }
+.editor__line-code .const { color: var(--code-constant); }
+.editor__line-code .param { color: var(--code-parameter); }
+.editor__line-code .type { color: var(--accent-blue); }
+.editor__line.is-active { background: var(--bg-overlay-l1); }
+
+/* === Chat panel === */
+.ide .chat {
+  display: flex; flex-direction: column;
+  background: var(--bg-base-default);
+  border-left: 1px solid var(--border-neutral-l1);
+  overflow: hidden;
+  height: 100%;
+}
+.chat__head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 var(--spacer-12);
+  height: 40px;
+  color: var(--text-default);
+  font-size: 12px; font-weight: 500;
+  border-bottom: 1px solid var(--border-neutral-l1);
+  flex-shrink: 0;
+}
+.chat__head > span:first-child { padding: 0 var(--spacer-4); font-weight: 600; }
+.chat__head .actions { display: inline-flex; align-items: center; gap: 4px; color: var(--icon-secondary); }
+.chat__head .actions button {
+  width: 24px; height: 24px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-4);
+  background: transparent; border: 0; color: inherit; cursor: pointer;
+}
+.chat__head .actions button:hover { color: var(--icon-default); background: var(--bg-overlay-l2); }
+
+.chat__body {
+  flex: 1; min-height: 0; min-width: 0;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  gap: 40px;
+  padding: var(--spacer-24) var(--spacer-16);
+  overflow-y: auto;
+}
+.chat__hero { align-self: stretch; text-align: center; }
+.chat__hero h1 {
+  margin: 0;
+  font-size: 24px; line-height: 32px; font-weight: 450;
+  color: var(--text-default);
+  font-family: var(--heading-md-font-family);
+}
+.chat__hero h1 .muted { color: var(--text-secondary); font-weight: 450; }
+
+.chat__composer-wrap {
+  align-self: stretch;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  flex-shrink: 0;
+}
+
+.chat__past { align-self: stretch; max-width: 640px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+.chat__past-title { font-size: 11px; font-weight: 600; line-height: 16px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; }
+.chat__past-list { display: flex; flex-direction: column; gap: 8px; }
+.chat__past-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 4px 10px;
+  height: 32px;
+  border-radius: var(--radius-4);
+  background: var(--bg-overlay-l1);
+  color: var(--text-default);
+  font-size: 12px;
+  cursor: pointer;
+}
+.chat__past-item:hover { background: var(--bg-overlay-l2); }
+.chat__past-item .left { display: inline-flex; align-items: center; min-width: 0; }
+.chat__past-item .left .icon { color: var(--icon-secondary); flex-shrink: 0; }
+.chat__past-item .label { padding: 0 8px; line-height: 18px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat__past-item .ago { color: var(--text-tertiary); font-size: 11px; line-height: 16px; padding: 0 8px; flex-shrink: 0; }
+
+/* === Responsive === */
+@media (max-width: 1280px) {
+  .ide__body { grid-template-columns: 48px 240px minmax(0, 1fr) minmax(0, 400px) !important; }
+}
+@media (max-width: 1024px) {
+  .ide__body { grid-template-columns: 48px 220px minmax(0, 1fr) !important; }
+  .ide .chat { display: none; }
+}
+@media (max-width: 768px) {
+  .ide__body { grid-template-columns: 48px minmax(0, 1fr) !important; }
+  .ide .sidebar { display: none; }
+}
+  </style>
+</body>
+</html>

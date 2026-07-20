@@ -1,0 +1,21 @@
+{
+  "voucher_no": "LOG-14-70A8F1",
+  "ref_vc_id": 20,
+  "ref_type": "Logistics",
+  "ref_id": 14,
+  "timestamp": "2026-05-17T14:32:38.635046",
+  "entries": [
+    {
+      "account": "存货/固定资产",
+      "debit": 184.0,
+      "credit": 0.0,
+      "summary": "采购设备入库"
+    },
+    {
+      "account": "应付账款 (供应商) - 应付账款 (供应商) - 华迈环保",
+      "debit": 0.0,
+      "credit": 184.0,
+      "summary": "入库挂账"
+    }
+  ]
+}

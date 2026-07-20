@@ -1,0 +1,7 @@
+baostock
+pandas
+fastparquet
+streamlit
+duckdb
+apscheduler
+pyarrow

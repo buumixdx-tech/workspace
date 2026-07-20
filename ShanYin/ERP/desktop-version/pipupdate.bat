@@ -1,0 +1,1 @@
+pip install -r requirements.txt -U -i https://pypi.tuna.tsinghua.edu.cn/simple/

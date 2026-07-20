@@ -1,0 +1,56 @@
+/**
+ * Project-level semantic aliases for TRAE design system.
+ * Bridges TRAE token names (--bg-*, --text-*, --icon-*, --border-*, --radius-*)
+ * to standard semantic token names expected by the HTML framework.
+ */
+
+:root {
+  /* Color semantic mappings */
+  --color-background: var(--bg-base-default);
+  --color-foreground: var(--text-default);
+  --color-muted: var(--text-secondary);
+  --color-muted-foreground: var(--text-tertiary);
+  --color-card: var(--bg-base-secondary);
+  --color-card-foreground: var(--text-default);
+  --color-popover: var(--bg-menu);
+  --color-popover-foreground: var(--text-default);
+  --color-primary: var(--bg-brand);
+  --color-primary-foreground: var(--text-onbrand);
+  --color-secondary: var(--bg-base-tertiary);
+  --color-secondary-foreground: var(--text-default);
+  --color-accent: var(--bg-brand);
+  --color-accent-foreground: var(--text-onbrand);
+  --color-destructive: var(--status-error-default);
+  --color-destructive-foreground: #ffffff;
+  --color-border: var(--border-neutral-l1);
+  --color-input: var(--border-neutral-l2);
+  --color-ring: var(--border-brand);
+  --color-surface: var(--bg-base-secondary);
+  --color-surface-variant: var(--bg-base-tertiary);
+
+  /* Radius semantic mappings (standard + color-prefixed for fill-html-head.mjs compatibility) */
+  --radius-sm: var(--radius-2);
+  --radius-md: var(--radius-4);
+  --radius-lg: var(--radius-6);
+  --radius-xl: var(--radius-8);
+  --radius-2xl: var(--radius-10);
+  --radius-full: var(--radius-full);
+  --color-radius-sm: var(--radius-2);
+  --color-radius-md: var(--radius-4);
+  --color-radius-lg: var(--radius-6);
+
+  /* Spacing semantic mappings */
+  --space-1: var(--spacer-4);
+  --space-2: var(--spacer-8);
+  --space-3: var(--spacer-12);
+  --space-4: var(--spacer-16);
+  --space-6: var(--spacer-24);
+  --space-8: var(--spacer-32);
+  --space-10: var(--spacer-40);
+
+  /* Status semantic mappings */
+  --color-success: var(--status-success-default);
+  --color-warning: var(--status-warning-default);
+  --color-error: var(--status-error-default);
+  --color-info: var(--status-primary-default);
+}

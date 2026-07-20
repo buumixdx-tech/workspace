@@ -1,0 +1,21 @@
+{
+  "voucher_no": "LOG-5-8F91B3",
+  "ref_vc_id": 5,
+  "ref_type": "Logistics",
+  "ref_id": 5,
+  "timestamp": "2026-04-08T18:44:40.624546",
+  "entries": [
+    {
+      "account": "主营业务收入",
+      "debit": 0.0,
+      "credit": 3240.0,
+      "summary": "物料供应确认收入"
+    },
+    {
+      "account": "应收账款 (客户) - 应收账款 (客户) - 廊坊羽旨",
+      "debit": 3240.0,
+      "credit": 0.0,
+      "summary": "交付挂账"
+    }
+  ]
+}

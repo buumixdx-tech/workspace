@@ -1,0 +1,21 @@
+{
+  "voucher_no": "CSH-13-FE9D7A",
+  "ref_vc_id": 18,
+  "ref_type": "CashFlow",
+  "ref_id": 13,
+  "timestamp": "2026-05-15T00:00:00",
+  "entries": [
+    {
+      "account": "应付账款 (供应商) - 应付账款 (供应商) - 苏州邦基勒",
+      "debit": 5250.0,
+      "credit": 0.0,
+      "summary": "核销应付"
+    },
+    {
+      "account": "货币资金 - 货币资金 - 中国银行天津凯旋支行 (5749)",
+      "debit": 0,
+      "credit": 5250.0,
+      "summary": "支付资金 (履约)"
+    }
+  ]
+}

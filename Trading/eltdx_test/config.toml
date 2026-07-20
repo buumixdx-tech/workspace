@@ -1,0 +1,28 @@
+# eltdx_test 服务配置
+
+[server]
+# Flask 服务监听地址
+host = "127.0.0.1"
+port = 5180
+
+[tdx]
+# 通达信行情主机列表（必须是 ip:port 格式）。
+# 留空则使用 eltdx 内置的默认主机池（43 个 IP，自动测速）。
+# 如需自定义，请使用类似 "116.205.183.150:7709" 的格式。
+# hosts = []
+timeout = 3.0           # 单次请求超时
+heartbeat_interval = 30.0  # 30 秒心跳
+probe_hosts = true      # 启动时探测最快主机
+
+[ui]
+# 前端默认配置
+refresh_seconds = 3
+default_code = "sz000001"
+
+[stocks]
+# A 股代码表自动刷新策略
+# 服务启动时检查 cache，超过 max_age_hours 就重新拉取（默认 24 小时）
+cache_file = "data/a_share_list.json"
+max_age_hours = 24
+# 启动时强制刷新（开发用，true 时每次启动都拉一次）
+force_refresh_on_start = false

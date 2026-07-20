@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>会议室灯泡上报系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="db.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+        }
+
+        .title {
+            color: #2d8cf0;
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .user-info {
+            margin-top: 10px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .form-item {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            background-color: #fafafa;
+        }
+
+        input[readonly] {
+            background-color: #f5f7fa;
+            color: #666;
+        }
+
+        select {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            background-color: #fafafa;
+        }
+
+        .upload-box {
+            border: 2px dashed #2d8cf0;
+            padding: 40px 20px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            background-color: #f8f9ff;
+        }
+
+        .upload-box p {
+            color: #2d8cf0;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .upload-box span {
+            color: #999;
+            font-size: 12px;
+        }
+
+        .upload-box.has-image {
+            border-style: solid;
+            padding: 10px;
+        }
+
+        .upload-box.has-image img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 4px;
+        }
+
+        .btn {
+            width: 100%;
+            background: #2d8cf0;
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .msg-box {
+            background: #f0f9ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #2d8cf0;
+            display: none;
+        }
+
+        .tab-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px;
+            background: #f5f7fa;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .tab.active {
+            background: #2d8cf0;
+            color: white;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .record-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .record-item:last-child {
+            border-bottom: none;
+        }
+
+        .record-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .record-desc {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .record-img {
+            margin-top: 8px;
+        }
+
+        .record-img img {
+            max-width: 100%;
+            max-height: 150px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .logout-btn {
+            width: 100%;
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 登录页面 -->
+        <div class="page active" id="loginPage">
+            <div class="header">
+                <h1 class="title">会议室灯泡上报系统</h1>
+                <p>行政部 · 会议服务专用</p>
+            </div>
+            <div class="card">
+                <div class="form-item">
+                    <label>账号</label>
+                    <input type="text" id="username" placeholder="请输入会服账号">
+                </div>
+                <div class="form-item">
+                    <label>密码</label>
+                    <input type="password" id="password" placeholder="请输入密码">
+                </div>
+                <button class="btn" onclick="login()">登录</button>
+                <p style="text-align:center;margin-top:15px;color:#999;font-size:12px;">默认账号：huifu 密码：123456</p>
+            </div>
+        </div>
+
+        <!-- 主功能页面 -->
+        <div class="page" id="mainPage">
+            <div class="header">
+                <h1 class="title">灯泡更换上报</h1>
+                <div class="user-info">
+                    欢迎你，<span id="currentUser"></span>
+                </div>
+            </div>
+
+            <div class="tab-box">
+                <button class="tab active" onclick="switchTab(0)">我要上报</button>
+                <button class="tab" onclick="switchTab(1)">我的上报</button>
+            </div>
+
+            <!-- 上报页面 -->
+            <div class="page active" id="reportPage">
+                <div class="card">
+                    <div class="form-item">
+                        <label>会议室编号</label>
+                        <input type="text" id="room" placeholder="例如：301/402">
+                    </div>
+                    <div class="form-item">
+                        <label>灯泡型号</label>
+                        <select id="model">
+                            <option value="ELPLP97">ELPLP97</option>
+                            <option value="ELPLP88">ELPLP88</option>
+                            <option value="ELPLP82">ELPLP82</option>
+                            <option value="ELPLP77">ELPLP77</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                    <div class="form-item">
+                        <label>更换数量</label>
+                        <input type="number" id="num" value="1" min="1">
+                    </div>
+
+                    <div class="upload-box" id="uploadBox" onclick="document.getElementById('file').click()">
+                        <input type="file" id="file" accept="image/*" capture="camera" style="display:none;">
+                        <p>📷 点击拍照 / 上传灯泡照片</p>
+                        <span>图片将作为备案保存</span>
+                    </div>
+
+                    <button class="btn" id="submitBtn" onclick="submitReport()" disabled>提交上报</button>
+                    <div id="msg" class="msg-box"></div>
+                </div>
+            </div>
+
+            <!-- 我的上报页面 -->
+            <div class="page" id="recordPage">
+                <div class="card">
+                    <h3 style="margin-bottom:15px;">我的上报记录</h3>
+                    <div id="recordList"></div>
+                </div>
+            </div>
+
+            <button class="logout-btn" onclick="logout()">退出登录</button>
+        </div>
+    </div>
+
+    <script>
+        // 全局数据
+        let currentUser = null;
+        let currentRole = null;
+        let currentImageBase64 = null;
+
+        // 页面初始化
+        window.onload = async function() {
+            await initDefaultData();
+            await checkLogin();
+        }
+
+        // 登录逻辑
+        async function login() {
+            let username = document.getElementById('username').value;
+            let password = document.getElementById('password').value;
+
+            if(!username || !password) {
+                alert('请输入账号和密码！');
+                return;
+            }
+
+            let user = await findUser(username, password);
+            if(!user || user.role !== '会服专员') {
+                alert('账号或密码错误，仅会服专员可登录本系统！');
+                return;
+            }
+
+            currentUser = user.username;
+            currentRole = user.role;
+            await setCurrentReportUser(currentUser);
+
+            document.getElementById('loginPage').classList.remove('active');
+            document.getElementById('mainPage').classList.add('active');
+            document.getElementById('currentUser').innerText = currentUser;
+
+            await renderMyRecord();
+        }
+
+        // 检查登录状态
+        async function checkLogin() {
+            let user = await getCurrentReportUser();
+            if(user) {
+                currentUser = user;
+                currentRole = '会服专员';
+                document.getElementById('loginPage').classList.remove('active');
+                document.getElementById('mainPage').classList.add('active');
+                document.getElementById('currentUser').innerText = currentUser;
+                await renderMyRecord();
+            }
+        }
+
+        // 退出登录
+        async function logout() {
+            await clearCurrentReportUser();
+            currentUser = null;
+            currentRole = null;
+            document.getElementById('mainPage').classList.remove('active');
+            document.getElementById('loginPage').classList.add('active');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+
+        // 切换标签
+        function switchTab(index) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('#mainPage .page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab')[index].classList.add('active');
+            document.querySelectorAll('#mainPage .page')[index].classList.add('active');
+            if(index === 1) renderMyRecord();
+        }
+
+        // 图片上传 - 仅保存base64作为备案
+        document.getElementById('file').onchange = function(e) {
+            let file = e.target.files[0];
+            if(!file) return;
+
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                currentImageBase64 = e.target.result;
+
+                let uploadBox = document.getElementById('uploadBox');
+                uploadBox.innerHTML = `
+                    <input type="file" id="file" accept="image/*" capture="camera" style="display:none;" onchange="fileChanged(this)">
+                    <img src="${currentImageBase64}" alt="备案图片">
+                    <p style="color:#2d8cf0;font-size:14px;margin-top:10px;">点击重新上传</p>
+                `;
+                uploadBox.classList.add('has-image');
+
+                document.getElementById('submitBtn').disabled = false;
+                document.getElementById('msg').style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 重新上传时触发
+        function fileChanged(input) {
+            let file = input.files[0];
+            if(!file) return;
+
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                currentImageBase64 = e.target.result;
+                let uploadBox = document.getElementById('uploadBox');
+                uploadBox.innerHTML = `
+                    <input type="file" id="file" accept="image/*" capture="camera" style="display:none;" onchange="fileChanged(this)">
+                    <img src="${currentImageBase64}" alt="备案图片">
+                    <p style="color:#2d8cf0;font-size:14px;margin-top:10px;">点击重新上传</p>
+                `;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 提交上报
+        async function submitReport() {
+            let room = document.getElementById('room').value;
+            let model = document.getElementById('model').value;
+            let num = parseInt(document.getElementById('num').value);
+
+            if(!room) {
+                alert('请填写会议室编号！');
+                return;
+            }
+
+            let status = "已更换";
+            let time = new Date().toLocaleString();
+            let operator = currentUser;
+
+            // 写入共享台账数据源
+            await addRecord({
+                time: time,
+                room: room,
+                model: model,
+                num: num,
+                status: status,
+                operator: operator,
+                image: currentImageBase64 || null
+            });
+
+            // 扣减库存
+            await reduceStock(num);
+
+            // 生成供应商发货单
+            let stock = await getStock();
+            let supplyOrder = `【自动发货单】\n会议室：${room}\n型号：${model}\n数量：${num}个\n紧急程度：${stock<5?'紧急':'普通'}\n申请时间：${time}`;
+            await setSupplyOrder(supplyOrder);
+
+            // 提示成功
+            let msgBox = document.getElementById('msg');
+            msgBox.innerHTML = `
+                ✅ 上报成功！全流程已自动完成<br><br>
+                📝 台账已自动同步到管理后台<br>
+                👤 已自动通知会服主管<br>
+                🔒 已同步资产管理员<br>
+                🚚 已推送发货单给供应商
+            `;
+            msgBox.style.display = 'block';
+
+            // 重置表单
+            resetForm();
+
+            // 刷新上报记录
+            await renderMyRecord();
+        }
+
+        // 重置表单
+        function resetForm() {
+            document.getElementById('room').value = '';
+            document.getElementById('num').value = '1';
+            document.getElementById('file').value = '';
+            currentImageBase64 = null;
+
+            let uploadBox = document.getElementById('uploadBox');
+            uploadBox.classList.remove('has-image');
+            uploadBox.innerHTML = `
+                <input type="file" id="file" accept="image/*" capture="camera" style="display:none;" onchange="fileChanged(this)">
+                <p>📷 点击拍照 / 上传灯泡照片</p>
+                <span>图片将作为备案保存</span>
+            `;
+
+            document.getElementById('submitBtn').disabled = true;
+        }
+
+        // 渲染我的上报记录
+        async function renderMyRecord() {
+            let recordList = await getRecordList();
+            let myRecord = recordList.filter(item => item.operator === currentUser);
+            let html = '';
+
+            if(myRecord.length === 0) {
+                html = '<p style="text-align:center;color:#999;padding:20px;">暂无上报记录</p>';
+            } else {
+                myRecord.forEach(item => {
+                    let imgHtml = item.image
+                        ? `<div class="record-img"><img src="${item.image}" alt="备案图片" onclick="previewImage(this.src)"></div>`
+                        : '';
+
+                    html += `
+                    <div class="record-item">
+                        <div class="record-title">${item.room}会议室 - ${item.model} 灯泡</div>
+                        <div class="record-desc">
+                            更换数量：${item.num}个 | 上报时间：${item.time} | 状态：${item.status}
+                        </div>
+                        ${imgHtml}
+                    </div>
+                    `;
+                });
+            }
+
+            document.getElementById('recordList').innerHTML = html;
+        }
+
+        // 预览图片
+        function previewImage(src) {
+            let win = window.open();
+            win.document.write(`<img src="${src}" style="max-width:100%;">`);
+        }
+    </script>
+</body>
+</html>

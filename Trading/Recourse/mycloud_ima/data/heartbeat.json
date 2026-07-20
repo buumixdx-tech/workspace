@@ -1,0 +1,18 @@
+{
+  "source": "mycloud",
+  "mode": "historical",
+  "dry_run": false,
+  "last_run_at": "2026-07-03T09:05:24+08:00",
+  "last_status": "success",
+  "last_duration_s": 17,
+  "last_batch_size": 5,
+  "last_input_chars": 3416,
+  "last_tokens": {
+    "in": 5195,
+    "out": 873,
+    "total": 6068
+  },
+  "last_track_id": "insert_20260703_090524_c98bb086",
+  "last_posted_count": 5,
+  "last_skipped_count": 0
+}

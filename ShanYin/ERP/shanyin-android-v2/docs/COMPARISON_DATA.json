@@ -1,0 +1,194 @@
+{
+  "metadata": {
+    "generated_at": "2026-04-02",
+    "desktop_source": "desktop-version/models.py + logic/",
+    "mobile_source": "shanyin-android-v2/app/src/main/java/com/shanyin/erp/",
+    "desktop_model_count": 24,
+    "mobile_entity_count": 24,
+    "entity_coverage_percent": 100
+  },
+  "entity_mapping": [
+    {"desktop": "ChannelCustomer", "mobile": "ChannelCustomerEntity", "status": "MATCH"},
+    {"desktop": "Point", "mobile": "PointEntity", "status": "MATCH"},
+    {"desktop": "Supplier", "mobile": "SupplierEntity", "status": "MATCH"},
+    {"desktop": "SKU", "mobile": "SkuEntity", "status": "MATCH"},
+    {"desktop": "EquipmentInventory", "mobile": "EquipmentInventoryEntity", "status": "MATCH"},
+    {"desktop": "MaterialInventory", "mobile": "MaterialInventoryEntity", "status": "MATCH"},
+    {"desktop": "Contract", "mobile": "ContractEntity", "status": "MATCH"},
+    {"desktop": "VirtualContract", "mobile": "VirtualContractEntity", "status": "MATCH"},
+    {"desktop": "VirtualContractStatusLog", "mobile": "VirtualContractStatusLogEntity", "status": "MATCH"},
+    {"desktop": "VirtualContractHistory", "mobile": "VirtualContractHistoryEntity", "status": "MATCH"},
+    {"desktop": "FinanceAccount", "mobile": "FinanceAccountEntity", "status": "MATCH"},
+    {"desktop": "FinancialJournal", "mobile": "FinancialJournalEntity", "status": "MATCH"},
+    {"desktop": "CashFlowLedger", "mobile": "CashFlowLedgerEntity", "status": "MATCH"},
+    {"desktop": "ExternalPartner", "mobile": "ExternalPartnerEntity", "status": "MATCH"},
+    {"desktop": "BankAccount", "mobile": "BankAccountEntity", "status": "MATCH"},
+    {"desktop": "Business", "mobile": "BusinessEntity", "status": "MATCH"},
+    {"desktop": "SupplyChain", "mobile": "SupplyChainEntity", "status": "MATCH"},
+    {"desktop": "SupplyChainItem", "mobile": "SupplyChainItemEntity", "status": "MATCH"},
+    {"desktop": "Logistics", "mobile": "LogisticsEntity", "status": "MATCH"},
+    {"desktop": "ExpressOrder", "mobile": "ExpressOrderEntity", "status": "MATCH"},
+    {"desktop": "CashFlow", "mobile": "CashFlowEntity", "status": "MATCH"},
+    {"desktop": "TimeRule", "mobile": "TimeRuleEntity", "status": "MATCH"},
+    {"desktop": "SystemEvent", "mobile": "SystemEventEntity", "status": "MATCH"}
+  ],
+  "module_coverage": {
+    "VC": {
+      "desktop_functions": 9,
+      "mobile_usecases": 18,
+      "status": "COMPLETE",
+      "notes": "设备采购/物料供应/退货 VC 创建完整；物料采购/库存采购/库存拨付可用 SaveVirtualContractUseCase 代替"
+    },
+    "Logistics": {
+      "desktop_functions": 6,
+      "mobile_usecases": 12,
+      "status": "COMPLETE",
+      "notes": "物流创建/入库确认/快递单状态推进完整；批量快递单推进缺失"
+    },
+    "Finance": {
+      "desktop_functions": 6,
+      "mobile_usecases": 20,
+      "status": "COMPLETE",
+      "notes": "资金流创建/更新/凭证化完整；内部划拨/外部出入金/核销池/报表完整"
+    },
+    "Deposit": {
+      "desktop_functions": 3,
+      "mobile_usecases": 6,
+      "status": "COMPLETE",
+      "notes": "押金逻辑完整实现在 VirtualContractStateMachineUseCase 中（processCfDeposit/processVcDeposit/distributeDepositToInventory）"
+    },
+    "Inventory": {
+      "desktop_functions": 1,
+      "mobile_usecases": 10,
+      "status": "COMPLETE",
+      "notes": "设备/物料入库完整在 ConfirmInboundUseCase 中；调拨和分布更新独立 UseCase"
+    },
+    "StateMachine": {
+      "desktop_functions": 3,
+      "mobile_usecases": 10,
+      "status": "COMPLETE",
+      "notes": "VC 状态机完整实现：onLogisticsStatusChanged/onCashFlowChanged/recalculateCashStatus/recalculateOverallStatus/processReturnVcAutoComplete"
+    },
+    "TimeRules": {
+      "desktop_functions": 7,
+      "mobile_usecases": 16,
+      "status": "COMPLETE",
+      "notes": "规则引擎核心完整；继承解析简化；规则同步（Business/SC/VC→Logistics）完整"
+    },
+    "Events": {
+      "desktop_functions": 3,
+      "mobile_usecases": 6,
+      "status": "PARTIAL",
+      "notes": "事件记录完整（RecordSystemEventUseCase）；事件监听器/响应器缺失"
+    },
+    "Business": {
+      "desktop_functions": 4,
+      "mobile_usecases": 12,
+      "status": "COMPLETE"
+    },
+    "SupplyChain": {
+      "desktop_functions": 4,
+      "mobile_usecases": 12,
+      "status": "COMPLETE"
+    },
+    "MasterData": {
+      "desktop_functions": 20,
+      "mobile_usecases": 24,
+      "status": "COMPLETE",
+      "notes": "Customer/Point/Supplier/SKU/Partner/BankAccount 完整 CRUD"
+    }
+  },
+  "naming_mismatches": {
+    "VCStatus": [
+      {"desktop": "EXE", "mobile": "EXECUTING", "risk": "HIGH"},
+      {"desktop": "FINISH", "mobile": "COMPLETED", "risk": "HIGH"},
+      {"desktop": "TERMINATED", "mobile": "TERMINATED", "risk": "NONE"},
+      {"desktop": "CANCELLED", "mobile": "CANCELLED", "risk": "NONE"}
+    ],
+    "CashStatus": [
+      {"desktop": "EXE", "mobile": "EXECUTING", "risk": "HIGH"},
+      {"desktop": "PREPAID", "mobile": "PREPAID", "risk": "NONE"},
+      {"desktop": "FINISH", "mobile": "COMPLETED", "risk": "HIGH"}
+    ],
+    "SubjectStatus": [
+      {"desktop": "EXE", "mobile": "EXECUTING", "risk": "HIGH"},
+      {"desktop": "SHIPPED", "mobile": "SHIPPED", "risk": "NONE"},
+      {"desktop": "SIGNED", "mobile": "SIGNED", "risk": "NONE"},
+      {"desktop": "FINISH", "mobile": "COMPLETED", "risk": "HIGH"}
+    ],
+    "LogisticsStatus": [
+      {"desktop": "PENDING", "mobile": "PENDING", "risk": "NONE"},
+      {"desktop": "TRANSIT", "mobile": "IN_TRANSIT", "risk": "HIGH"},
+      {"desktop": "SIGNED", "mobile": "SIGNED", "risk": "NONE"},
+      {"desktop": "FINISH", "mobile": "COMPLETED", "risk": "HIGH"}
+    ],
+    "CashFlowType": [
+      {"desktop": "PREPAYMENT", "mobile": "PREPAYMENT", "risk": "NONE"},
+      {"desktop": "FULFILLMENT", "mobile": "PERFORMANCE", "risk": "HIGH"},
+      {"desktop": "DEPOSIT", "mobile": "DEPOSIT", "risk": "NONE"},
+      {"desktop": "RETURN_DEPOSIT", "mobile": "DEPOSIT_REFUND", "risk": "HIGH"},
+      {"desktop": "REFUND", "mobile": "REFUND", "risk": "NONE"},
+      {"desktop": "OFFSET_PAY", "mobile": "OFFSET_OUTFLOW", "risk": "HIGH"},
+      {"desktop": "OFFSET_IN", "mobile": "OFFSET_INFLOW", "risk": "HIGH"},
+      {"desktop": "DEPOSIT_OFFSET_IN", "mobile": "DEPOSIT_OFFSET_IN", "risk": "NONE"},
+      {"desktop": "PENALTY", "mobile": "PENALTY", "risk": "NONE"}
+    ],
+    "OperationalStatus": [
+      {"desktop": "STOCK", "mobile": "IN_STOCK", "risk": "MEDIUM"},
+      {"desktop": "OPERATING", "mobile": "IN_OPERATION", "risk": "MEDIUM"},
+      {"desktop": "DISPOSED", "mobile": "DISPOSAL", "risk": "MEDIUM"}
+    ],
+    "VCType": [
+      {"desktop": "EQUIPMENT_PROCUREMENT", "mobile": "EQUIPMENT_PROCUREMENT", "risk": "NONE"},
+      {"desktop": "STOCK_PROCUREMENT", "mobile": "EQUIPMENT_STOCK", "risk": "MEDIUM"},
+      {"desktop": "INVENTORY_ALLOCATION", "mobile": "INVENTORY_ALLOCATION", "risk": "NONE"},
+      {"desktop": "MATERIAL_PROCUREMENT", "mobile": "MATERIAL_PROCUREMENT", "risk": "NONE"},
+      {"desktop": "MATERIAL_SUPPLY", "mobile": "MATERIAL_SUPPLY", "risk": "NONE"},
+      {"desktop": "RETURN", "mobile": "RETURN", "risk": "NONE"}
+    ]
+  },
+  "critical_gaps": [
+    {
+      "module": "CashFlow_Naming",
+      "priority": "CRITICAL",
+      "description": "FULFILLMENT/PERFORMANCE 等 4 个 CashFlowType 命名不一致",
+      "impact": "Desktop/Mobile 数据同步时货款计算逻辑完全失效"
+    },
+    {
+      "module": "Status_Naming",
+      "priority": "HIGH",
+      "description": "FINISH/COMPLETED, EXE/EXECUTING, TRANSIT/IN_TRANSIT 状态值命名不一致",
+      "impact": "Desktop/Mobile 状态同步时状态判断失效"
+    },
+    {
+      "module": "Batch_Express",
+      "priority": "LOW",
+      "description": "批量快递单推进功能缺失",
+      "impact": "无法批量操作快递单状态"
+    },
+    {
+      "module": "Events_Listeners",
+      "priority": "LOW",
+      "description": "事件监听器/响应器缺失",
+      "impact": "事件触发后无自动响应逻辑"
+    }
+  ],
+  "mobile_complete_features": [
+    "VC 状态机 (VirtualContractStateMachineUseCase) - 完整对标 Desktop state_machine.py",
+    "VC 创建 Use Cases - 设备采购/物料供应/退货完整；物料采购/库存采购可用 SaveVirtualContractUseCase 代替",
+    "物流操作 - 创建/入库确认/快递单状态推进完整",
+    "库存操作 - 设备按 SN 入库/物料按汇总/调拨/分布更新",
+    "财务凭证生成 - 资金流凭证化/物流凭证化完整",
+    "押金逻辑 - processCfDeposit/processVcDeposit/distributeDepositToInventory 完整",
+    "Business Use Cases - 完整 CRUD + 阶段推进",
+    "SupplyChain Use Cases - 完整 CRUD + SKU 定价",
+    "MasterData Use Cases - Customer/Point/Supplier/SKU/Partner/BankAccount 完整 CRUD",
+    "财务核销 (OffsetPoolUseCase, ApplyOffsetToVcUseCase)",
+    "财务报表 (FinancialStatementsUseCase, BankReconciliationUseCase)",
+    "应收应付 (AccountsPayableReceivableUseCases)",
+    "规则引擎核心 (RuleEngine, RuleEvaluator, EventHandler)",
+    "时间规则同步 (SyncRulesFromBusiness/SC/VC)",
+    "数据导入 (ImportViewModel)",
+    "所有 Entity Repository 接口"
+  ]
+}

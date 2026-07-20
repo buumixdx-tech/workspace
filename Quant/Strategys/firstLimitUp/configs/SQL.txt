@@ -1,0 +1,124 @@
+WITH
+    -- 参数设置
+    end_date AS (SELECT toDate('2025-08-07') AS dt),
+    upper_limit AS (SELECT 0.75 AS val), -- 回撤幅度上限
+    lower_limit AS (SELECT 0 AS val),  -- 回撤幅度下限
+
+    -- 确定 T 日及相关的交易日
+    T_date AS (
+        SELECT max(date) AS t_date
+        FROM stock_data.index_k
+        WHERE date <= (SELECT dt FROM end_date)
+    ),
+    T_date_scalar AS (
+        SELECT (SELECT t_date FROM T_date) AS t_dt
+    ),
+    relevant_trading_days AS (
+        SELECT
+            date AS trade_date,
+            row_number() OVER (ORDER BY date DESC) AS days_ago_rank
+        FROM (
+            SELECT DISTINCT date
+            FROM stock_data.daily_k
+            WHERE date <= (SELECT t_dt FROM T_date_scalar)
+        ) AS unique_dates
+        ORDER BY date DESC
+        LIMIT 6
+    ),
+
+    -- 步骤 2: T-5 到 T 日连续交易的股票
+    trading_days_T_5_to_T AS (
+       SELECT trade_date
+       FROM relevant_trading_days
+       WHERE days_ago_rank BETWEEN 1 AND 6
+    ),
+    valid_stocks_step2 AS (
+        SELECT k.code
+        FROM stock_data.daily_k AS k
+        INNER JOIN trading_days_T_5_to_T AS td ON k.date = td.trade_date
+        WHERE k.tradestatus = 1
+        GROUP BY k.code
+        HAVING count(*) = 6
+    ),
+
+    -- 步骤 3: T-5 到 T-2 日有且仅有一次涨停的股票
+    trading_days_T_5_to_T_2 AS (
+        SELECT trade_date
+        FROM relevant_trading_days
+        WHERE days_ago_rank BETWEEN 3 AND 6 -- T-2 (rank=3) 到 T-5 (rank=6)
+    ),
+    stocks_with_one_limit_up AS (
+        SELECT
+            k.code AS stock_code,
+            any(k.date) AS limit_up_date
+        FROM stock_data.daily_k AS k
+        INNER JOIN trading_days_T_5_to_T_2 AS td ON k.date = td.trade_date
+        INNER JOIN valid_stocks_step2 AS vs ON k.code = vs.code
+        WHERE k.price_status = 1 -- 涨停封板
+        GROUP BY k.code
+        HAVING count(*) = 1
+    ),
+
+    -- 步骤 4: 获取 L+1 到 T 日的数据 (用于计算价格区间和获取 pre_limit_up_preclose)
+    trading_days_L_plus_1_to_T AS (
+         SELECT k.code AS stock_code, k.date, k.open, k.close -- 仅选择 open 和 close
+         FROM stock_data.daily_k AS k
+         INNER JOIN stocks_with_one_limit_up AS lu ON k.code = lu.stock_code
+         WHERE k.date BETWEEN lu.limit_up_date + 1 AND (SELECT t_dt FROM T_date_scalar)
+           AND k.tradestatus = 1
+    ),
+    -- *** 修正点 1: 价格区间计算 ***
+    price_ranges_after_limit AS (
+        SELECT
+            stock_code,
+            -- 计算 L+1 日到 T 日所有 open 和 close 价格中的最高价 (区间上限)
+            greatest(max(open), max(close)) AS high_after_limit,
+            -- 计算 L+1 日到 T 日所有 open 和 close 价格中的最低价 (区间下限)
+            least(min(open), min(close)) AS low_after_limit
+        FROM trading_days_L_plus_1_to_T
+        GROUP BY stock_code
+    ),
+    -- 获取涨停日 (L日) 的信息：收盘价 (封板价) 和 前一日收盘价 (pre_limit_up_preclose)
+    -- *** 修正点 2: 正确获取 pre_limit_up_preclose ***
+    limit_up_info AS (
+        SELECT
+            k.code AS stock_code,
+            k.close AS limit_up_close_price,        -- L 日收盘价 (封板价)
+            k.preclose AS pre_limit_up_preclose     -- L-1 日的收盘价
+        FROM stock_data.daily_k AS k
+        INNER JOIN stocks_with_one_limit_up AS lu ON k.code = lu.stock_code AND k.date = lu.limit_up_date
+    )
+
+-- 步骤 5 & 6: 计算回撤幅度并筛选最终结果
+SELECT
+    final_result.stock_code AS code,
+    final_result.limit_up_close_price,
+    final_result.high_after_limit,
+    final_result.low_after_limit,
+    final_result.pre_limit_up_preclose,
+    final_result.high_drawdown,
+    final_result.low_drawdown
+FROM (
+    SELECT
+        pr.stock_code,
+        lu.limit_up_close_price,       -- L 日收盘价 (封板价)
+        pr.high_after_limit,           -- L+1 到 T 日所有 open/close 中的最高价
+        pr.low_after_limit,            -- L+1 到 T 日所有 open/close 中的最低价
+        lu.pre_limit_up_preclose,      -- L-1 日的收盘价
+        -- 计算板后最高价的回撤幅度
+        (lu.limit_up_close_price - pr.high_after_limit) / (lu.limit_up_close_price - lu.pre_limit_up_preclose) AS high_drawdown,
+        -- 计算板后最低价的回撤幅度
+        (lu.limit_up_close_price - pr.low_after_limit) / (lu.limit_up_close_price - lu.pre_limit_up_preclose) AS low_drawdown
+    FROM price_ranges_after_limit AS pr
+    INNER JOIN limit_up_info AS lu ON pr.stock_code = lu.stock_code
+    WHERE
+        -- 防止除以零错误
+        lu.limit_up_close_price <> lu.pre_limit_up_preclose
+        AND
+        -- 板后最高价的回撤幅度 >= lower_limit (0.1)
+        ((lu.limit_up_close_price - pr.high_after_limit) / (lu.limit_up_close_price - lu.pre_limit_up_preclose)) >= (SELECT val FROM lower_limit)
+        AND
+        -- 板后最低价的回撤幅度 <= upper_limit (0.75)
+        ((lu.limit_up_close_price - pr.low_after_limit) / (lu.limit_up_close_price - lu.pre_limit_up_preclose)) <= (SELECT val FROM upper_limit)
+) AS final_result
+ORDER BY final_result.stock_code;

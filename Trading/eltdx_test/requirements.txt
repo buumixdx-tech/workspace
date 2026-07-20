@@ -1,0 +1,4 @@
+eltdx>=1.0.2
+flask>=3.0
+toml>=0.10
+pypinyin>=0.51

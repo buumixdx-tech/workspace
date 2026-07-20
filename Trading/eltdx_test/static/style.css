@@ -1,0 +1,328 @@
+/* ============== 全局 ============== */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f4f6fa;
+  color: #1f2937;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.hidden { display: none !important; }
+
+/* ============== 顶部 ============== */
+.topbar {
+  background: linear-gradient(90deg, #1e3a8a, #1d4ed8);
+  color: #fff;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.brand { display: flex; align-items: baseline; gap: 8px; }
+.brand .logo { font-size: 22px; }
+.brand .title { font-size: 18px; font-weight: 700; }
+.brand .subtitle { font-size: 12px; color: rgba(255,255,255,0.7); }
+
+.controls { display: flex; align-items: center; gap: 8px; }
+.controls input[type="text"] {
+  padding: 7px 12px;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 4px;
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  font-size: 14px;
+  width: 240px;
+}
+.controls input::placeholder { color: rgba(255,255,255,0.6); }
+.controls input:focus { outline: none; background: rgba(255,255,255,0.25); }
+
+.search-wrap { position: relative; display: inline-block; }
+.suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 360px;
+  max-height: 360px;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  z-index: 200;
+  font-size: 13px;
+}
+.suggestions .item {
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f3f4f6;
+  color: #1f2937;
+}
+.suggestions .item:last-child { border-bottom: none; }
+.suggestions .item:hover,
+.suggestions .item.active {
+  background: #eff6ff;
+}
+.suggestions .item .name { font-weight: 600; }
+.suggestions .item .code { color: #6b7280; font-family: "Consolas", monospace; font-size: 12px; }
+.suggestions .item .board {
+  font-size: 11px;
+  color: #fff;
+  background: #6366f1;
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-left: 8px;
+}
+.suggestions .empty {
+  padding: 16px;
+  text-align: center;
+  color: #9ca3af;
+}
+.suggestions .header {
+  padding: 6px 12px;
+  background: #f9fafb;
+  color: #6b7280;
+  font-size: 11px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.controls select {
+  padding: 7px 10px;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 4px;
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+.controls select option { color: #1f2937; background: #fff; }
+
+.btn {
+  padding: 7px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn:hover { opacity: 0.85; }
+.btn-primary { background: #f59e0b; color: #fff; font-weight: 600; }
+.btn-primary.paused { background: #10b981; }
+
+.status {
+  font-size: 12px;
+  color: rgba(255,255,255,0.85);
+  min-width: 90px;
+  text-align: right;
+}
+
+/* ============== 错误条 ============== */
+.error-bar {
+  background: #fee2e2;
+  color: #991b1b;
+  border-left: 4px solid #dc2626;
+  padding: 10px 24px;
+  font-size: 13px;
+}
+
+/* ============== 主体两栏 ============== */
+.main {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 16px;
+  padding: 16px 24px;
+}
+@media (max-width: 1024px) {
+  .main { grid-template-columns: 1fr; }
+}
+
+.chart-panel, .quote-panel, .volume-panel, .left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.panel-header h3 { font-size: 15px; font-weight: 600; color: #374151; }
+.panel-header .meta { font-size: 12px; color: #6b7280; }
+
+.mode-tabs {
+  display: inline-flex;
+  background: #f3f4f6;
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+.mode-tabs .tab {
+  padding: 5px 14px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.mode-tabs .tab.active {
+  background: #fff;
+  color: #1d4ed8;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+.mode-tabs .tab:hover:not(.active) {
+  color: #374151;
+}
+
+.kline-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.kline-controls select {
+  padding: 5px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 12px;
+  color: #374151;
+  cursor: pointer;
+}
+
+.card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+
+.chart {
+  width: 100%;
+  height: 400px;
+}
+
+.volume-chart {
+  width: 100%;
+  height: 160px;
+}
+
+/* ============== 报价卡 ============== */
+.quote-card .price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 16px 16px 8px;
+}
+.last-price {
+  font-size: 36px;
+  font-weight: 700;
+  font-family: "Consolas", "Monaco", monospace;
+}
+.change {
+  font-size: 16px;
+  font-weight: 600;
+  font-family: "Consolas", "Monaco", monospace;
+}
+.quote-card .change-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 16px 12px;
+  font-size: 13px;
+}
+.change-pct { font-weight: 600; font-family: "Consolas", "Monaco", monospace; }
+.quote-time { color: #6b7280; font-size: 12px; }
+
+/* 涨跌色 —— A 股惯例：红涨绿跌 */
+.up   { color: #dc2626; }
+.down { color: #16a34a; }
+.flat { color: #6b7280; }
+.bg-up   { background: #fef2f2; }
+.bg-down { background: #f0fdf4; }
+
+.quote-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.quote-table th, .quote-table td {
+  padding: 8px 12px;
+  border-top: 1px solid #f3f4f6;
+  text-align: left;
+}
+.quote-table th {
+  color: #6b7280;
+  font-weight: 500;
+  width: 25%;
+  background: #f9fafb;
+}
+.quote-table td {
+  font-family: "Consolas", "Monaco", monospace;
+}
+
+/* ============== 五档盘口 ============== */
+.depth-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.depth-table th {
+  padding: 8px 12px;
+  font-weight: 600;
+  background: #f9fafb;
+  text-align: center;
+}
+.depth-table .sell-header { background: #fef2f2; color: #16a34a; }
+.depth-table .buy-header  { background: #f0fdf4; color: #dc2626; }
+.depth-table td {
+  padding: 6px 12px;
+  text-align: right;
+  font-family: "Consolas", "Monaco", monospace;
+}
+.depth-table td:first-child { text-align: center; color: #6b7280; }
+.depth-table tr.current td { font-weight: 700; }
+.depth-table tr.sell-row td.price { color: #16a34a; }
+.depth-table tr.buy-row  td.price { color: #dc2626; }
+
+/* ============== 字段详情卡 ============== */
+.fields-card { margin: 0 24px 24px; }
+.fields-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+  padding: 16px;
+}
+.field-item {
+  background: #f9fafb;
+  padding: 8px 12px;
+  border-radius: 4px;
+  border-left: 3px solid #3b82f6;
+  font-size: 12px;
+}
+.field-item .key {
+  color: #6b7280;
+  display: block;
+  margin-bottom: 2px;
+}
+.field-item .val {
+  font-family: "Consolas", "Monaco", monospace;
+  font-weight: 600;
+  color: #1f2937;
+  word-break: break-all;
+}
+.field-item.nested { border-left-color: #8b5cf6; }
+.field-item .nested-list {
+  margin-top: 4px;
+  padding-left: 8px;
+  border-left: 1px dashed #d1d5db;
+}

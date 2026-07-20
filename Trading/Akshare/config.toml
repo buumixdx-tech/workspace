@@ -1,0 +1,45 @@
+[clickhouse]
+host = "127.0.0.1"
+port = 8123
+user = "admin"
+password = "admin_password"
+database = "stock_data"
+
+[dify]
+hotspot_api_key = "app-UJOqC220TPezzOATlygeHiiB"
+sector_hook_api_key = "app-yKgOYeJruENhFpbTOF5xml78"
+hotspot_2_api_key = "app-2jzV2TbQsiGhnf8iO8sVK7GQ"
+gemini_analysis_api_key = "app-3kVipIexFbtTSfpMMhj3FsO0"
+processor5_gemini_api_key = "app-THMzu4NxGiYK1ufuFpjZfCGa"
+base_url = "http://localhost:5001"
+max_workers = 8
+
+[telegram]
+bot_token = "8234885916:AAEGKrG44CTwPZ5QERHGZYwzTqK8fJWRHI4"
+# Multiple recipients example: chat_id = "8177774663, 7750971831, -1003779727399(group chat_id), -1003651133334(channel chat_id)"
+chat_id = "7750971831, -1003651133334"
+receiver_token = "8236604138:AAGY7KsbZ7cWVGYn6ZHf1ZQT7CCubz-Ipgg" # For HTML Client
+
+[monitor]
+snapshot_interval = 10         # 个股快照抓取间隔 (秒)
+concept_update_interval = 30   # 板块指数聚合间隔 (秒)
+analysis_interval = 10         # 策略分析与推送间隔 (对齐个股快照频率)
+stop_time = "15:10"            # 每日自动停止时间 (24小时制)
+
+[strategy]
+# 1. 板块分级阈值 (Pool 1/2/3)
+pool1_limit_up_min = 3         # P1 (活跃): 最小涨停家数
+pool2_pct_min = 3.5            # P2 (强势): 最小板块涨幅 (%)
+pool3_pct_min = 5.0            # P3 (爆发): 最小板块涨幅 (%)
+
+top_n_concepts = 10            # (Legacy) 市场涨幅前 N 板块
+boom_stock_count_max = 100     # 强势共振板块最大成分股数
+
+# 2. 冲板捕捉参数 (10cm 主板)
+lottery_10cm_min = 8.0         # 监控起始涨幅
+lottery_10cm_max = 9.8         # 监控截止涨幅
+
+# 3. 冲板捕捉参数 (20cm 创业/科创)
+lottery_20cm_min = 15.0        # 监控起始涨幅
+lottery_20cm_max = 19.5        # 监控截止涨幅
+

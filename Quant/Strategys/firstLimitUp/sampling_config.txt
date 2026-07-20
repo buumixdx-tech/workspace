@@ -1,0 +1,6 @@
+start_date:20250109
+end_date:20250801
+strategy:flu2.py
+holding_period:2
+sampling:true
+back_testing_mode:1

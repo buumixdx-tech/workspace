@@ -1,0 +1,153 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "股票分析结果数据架构",
+  "description": "result_p5 JSON 文件的完整结构定义",
+  "type": "object",
+  "properties": {
+    "metadata": {
+      "title": "元数据",
+      "description": "关于数据生成的背景信息",
+      "type": "object",
+      "properties": {
+        "source_file": {
+          "title": "源文件名称",
+          "description": "原始 Excel 数据源文件名",
+          "type": "string"
+        },
+        "concept_source": {
+          "title": "板块数据源",
+          "description": "概念板块数据的来源说明",
+          "type": "string"
+        },
+        "total_stocks": {
+          "title": "股票总数",
+          "description": "文件中包含的股票总支数",
+          "type": "integer"
+        },
+        "generated_at": {
+          "title": "生成时间",
+          "description": "该 JSON 文件生成的时间戳",
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "source_file",
+        "concept_source",
+        "total_stocks",
+        "generated_at"
+      ]
+    },
+    "stocks": {
+      "title": "股票数据列表",
+      "description": "包含所有分析股票的详细信息数组",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "title": "单股数据项",
+        "properties": {
+          "code": {
+            "title": "股票代码",
+            "description": "股票的标准证券代码（如 SH.600000）",
+            "type": "string"
+          },
+          "name": {
+            "title": "股票名称",
+            "description": "股票的简称",
+            "type": "string"
+          },
+          "market_cap_adjusted": {
+            "title": "自由市值",
+            "description": "调整后的自由流通市值，单位：亿元",
+            "type": "number"
+          },
+          "business_description": {
+            "title": "业务简介",
+            "description": "对公司核心业务和主营产品的简短描述",
+            "type": "string"
+          },
+          "hooked_hotspots": {
+            "title": "挂钩热点",
+            "description": "由 hotspots2.txt 定义的、股票直接挂钩的热点层级列表",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "level1": {
+                  "title": "一级分类",
+                  "type": "string"
+                },
+                "level2": {
+                  "title": "二级分类",
+                  "type": "string"
+                },
+                "level3": {
+                  "title": "三级分类",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "level1"
+              ]
+            }
+          },
+          "potential_hotspots": {
+            "title": "潜在关联",
+            "description": "与股票存在潜在关联或未来可能涉及的热点层级列表",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "level1": {
+                  "title": "一级分类",
+                  "type": "string"
+                },
+                "level2": {
+                  "title": "二级分类",
+                  "type": "string"
+                },
+                "level3": {
+                  "title": "三级分类",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "level1"
+              ]
+            }
+          },
+          "concept_boards": {
+            "title": "概念板块",
+            "description": "从金融终端提取的所属概念板块名称列表",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "concept_name": {
+                  "title": "概念名称",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "concept_name"
+              ]
+            }
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "market_cap_adjusted",
+          "business_description",
+          "hooked_hotspots",
+          "potential_hotspots",
+          "concept_boards"
+        ]
+      }
+    }
+  },
+  "required": [
+    "metadata",
+    "stocks"
+  ]
+}

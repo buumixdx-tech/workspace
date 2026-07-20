@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
+<title>YTLocal — 下载</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><span class="logo">🎬</span>YTLocal</div>
+    <nav class="nav">
+      <a href="/">浏览</a>
+      <a href="/download" class="active">下载</a>
+      <a href="/history">历史</a>
+    </nav>
+    <button class="search-btn" onclick="openSearch()" aria-label="搜索">🔍</button>
+  </div>
+</header>
+
+<main class="container" style="padding-top: 16px;">
+  <div class="dl-form">
+    <div class="dl-input-row">
+      <input id="urlInput" class="dl-input" type="url" placeholder="粘贴视频链接 (YouTube/B站/Twitter…)" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <button class="dl-paste" id="pasteBtn" type="button">粘贴</button>
+    </div>
+    <div class="dl-opts">
+      <label>画质
+        <select id="qualitySel">
+          <option value="2160p">2160p (4K)</option>
+          <option value="1440p">1440p</option>
+          <option value="1080p">1080p</option>
+          <option value="720p" selected>720p (默认)</option>
+          <option value="480p">480p</option>
+          <option value="360p">360p</option>
+          <option value="144p">144p</option>
+        </select>
+      </label>
+      <label><input type="checkbox" id="audioOnly"> 仅音频 (m4a)</label>
+    </div>
+    <button class="dl-submit" id="submitBtn">⬇  加入下载队列</button>
+  </div>
+
+  <div class="stats-box" style="margin-bottom: 18px;">
+    <div class="stat-item">
+      <div class="stat-num">{{ stats.video_count }}</div>
+      <div class="stat-label">库中视频</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">
+        {% set gb = (stats.total_bytes or 0) / 1073741824 %}
+        {{ '%.1f' % gb }} GB
+      </div>
+      <div class="stat-label">总占用</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">{{ stats.active_tasks }}</div>
+      <div class="stat-label">进行中</div>
+    </div>
+  </div>
+
+  <div class="task-block">
+    <div class="task-block-head">
+      <h3>当前任务 <span class="count">{{ active | length }}</span></h3>
+    </div>
+    {% if active %}
+      {% for t in active %}
+      <div class="task" data-tid="{{ t.id }}">
+        <div class="task-row1">
+          <div class="task-title">{{ t.url }}</div>
+          <button class="task-cancel" onclick="cancelTask({{ t.id }})" title="取消">✕</button>
+        </div>
+        <div class="task-meta">
+          <span class="task-status-icon {{ t.status }}">
+            {% if t.status == 'downloading' %}⏬
+            {% elif t.status == 'postproc' %}⚙
+            {% else %}⏳{% endif %}
+          </span>
+          <span>{{ t.quality }}{% if t.audio_only %} · 仅音频{% endif %}</span>
+          <span>· {{ t.progress_pct }}%</span>
+          {% if t.error %}<span class="task-error" title="{{ t.error }}">{{ t.error }}</span>{% endif %}
+        </div>
+        <div class="task-bar"><div class="fill" style="width: {{ t.progress_pct }}%"></div></div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div style="color: var(--fg-1); font-size: 13px; padding: 8px 0;">暂无任务</div>
+    {% endif %}
+  </div>
+
+  <div class="task-block">
+    <div class="task-block-head">
+      <h3>最近任务 <span class="count">{{ recent | length }}</span></h3>
+    </div>
+    {% for t in recent %}
+    <div class="task" data-tid="{{ t.id }}">
+      <div class="task-row1">
+        <div class="task-title">
+          {% if t.video_id %}
+          <a href="/w/{{ t.video_id }}" style="color: var(--fg-0);">{{ '视频 #' + t.video_id|string }}</a>
+          {% else %}
+            {{ t.error or '无标题' }}
+          {% endif %}
+        </div>
+      </div>
+      <div class="task-meta">
+        <span class="task-status-icon {{ t.status }}">
+          {% if t.status == 'done' %}✅
+          {% elif t.status == 'failed' %}❌
+          {% elif t.status == 'canceled' %}🚫
+          {% else %}·{% endif %}
+        </span>
+        <span>{{ t.quality }}{% if t.audio_only %} · 仅音频{% endif %}</span>
+        <span>· {{ t.created_at | humantime }}{% if t.finished_at %} → {{ t.finished_at | humantime }}{% endif %}</span>
+        {% if t.status == 'done' and t.video_id %}
+          <a href="/w/{{ t.video_id }}" style="color: var(--accent); margin-left: auto; font-size: 12px;">打开 →</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const $ = s => document.querySelector(s);
+
+  // 自动填剪贴板
+  async function tryAutofill(){
+    try {
+      const txt = await navigator.clipboard.readText();
+      if (txt && /^https?:\/\//.test(txt) && !$('#urlInput').value) {
+        $('#urlInput').value = txt;
+      }
+    } catch (e) {}
+  }
+  document.addEventListener('click', tryAutofill, {once: true});
+
+  $('#pasteBtn').onclick = async () => {
+    try {
+      const txt = await navigator.clipboard.readText();
+      $('#urlInput').value = txt;
+      $('#urlInput').focus();
+    } catch (e) {
+      toast('无法访问剪贴板,请手动粘贴', 'err');
+    }
+  };
+
+  $('#submitBtn').onclick = async () => {
+    const url = $('#urlInput').value.trim();
+    const quality = $('#qualitySel').value;
+    const audio_only = $('#audioOnly').checked;
+    if (!url) { toast('请输入链接', 'err'); return; }
+    $('#submitBtn').disabled = true;
+    try {
+      const r = await fetch('/api/enqueue', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({url, quality, audio_only})
+      });
+      const j = await r.json();
+      if (r.ok) {
+        toast('已加入队列 #'+j.task_id, 'ok');
+        $('#urlInput').value = '';
+        setTimeout(() => location.reload(), 600);
+      } else {
+        toast(j.error || '提交失败', 'err');
+        $('#submitBtn').disabled = false;
+      }
+    } catch (e) {
+      toast('网络错误: '+e.message, 'err');
+      $('#submitBtn').disabled = false;
+    }
+  };
+
+  async function cancelTask(tid){
+    if (!confirm('确定取消这个任务?')) return;
+    await fetch('/api/tasks/'+tid, {method: 'DELETE'});
+    setTimeout(() => location.reload(), 400);
+  }
+
+  function openSearch(){
+    const q = prompt('搜索视频:');
+    if (q) location.href = '/history?q=' + encodeURIComponent(q);
+  }
+
+  function toast(msg, type){
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'toast show ' + (type || '');
+    clearTimeout(window.__tt);
+    window.__tt = setTimeout(() => el.className = 'toast', 2200);
+  }
+  window.toast = toast;
+
+  let lastTaskHash = '';
+  setInterval(async () => {
+    try {
+      const r = await fetch('/api/tasks?active=1');
+      const j = await r.json();
+      const h = JSON.stringify(j.items.map(t => [t.id, t.status, t.progress_pct, t.error]));
+      if (h !== lastTaskHash && j.items.length > 0) {
+        lastTaskHash = h;
+        const dl = j.items.some(t => t.status === 'downloading' || t.status === 'postproc');
+        if (dl) location.reload();
+      }
+    } catch(e) {}
+  }, 3000);
+</script>
+</body>
+</html>

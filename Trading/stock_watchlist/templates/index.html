@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自选股管理</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/echarts.min.js"></script>
+</head>
+<body>
+
+<div id="app">
+    <!-- 顶部栏 -->
+    <header id="topbar">
+        <div class="topbar-left">
+            <span class="logo">WATCHLIST</span>
+            <span class="topbar-sub">A-Share</span>
+        </div>
+        <div class="topbar-indices" id="indices-bar">
+            <!-- 6 列指数区,JS 启动后填充 -->
+            <div class="index-cell" data-key="sh000001"><span class="index-name">上证</span><span class="index-value" id="idx-sh000001">--</span><span class="index-chg flat" id="idx-chg-sh000001">--</span></div>
+            <div class="index-cell" data-key="sz399001"><span class="index-name">深成</span><span class="index-value" id="idx-sz399001">--</span><span class="index-chg flat" id="idx-chg-sz399001">--</span></div>
+            <div class="index-cell" data-key="sh000688"><span class="index-name">科创</span><span class="index-value" id="idx-sh000688">--</span><span class="index-chg flat" id="idx-chg-sh000688">--</span></div>
+            <div class="index-cell" data-key="^N225"><span class="index-name">日经225</span><span class="index-value" id="idx-^N225">--</span><span class="index-chg flat" id="idx-chg-^N225">--</span></div>
+            <div class="index-cell" data-key="^KS11"><span class="index-name">韩国KOSPI</span><span class="index-value" id="idx-^KS11">--</span><span class="index-chg flat" id="idx-chg-^KS11">--</span></div>
+            <div class="index-cell" data-key="^TWII"><span class="index-name">台湾加权</span><span class="index-value" id="idx-^TWII">--</span><span class="index-chg flat" id="idx-chg-^TWII">--</span></div>
+        </div>
+        <div class="topbar-right">
+            <span class="topbar-time" id="clock">--:--:--</span>
+        </div>
+    </header>
+
+    <div id="workspace">
+        <!-- 左侧：板块导航 -->
+        <nav id="sidebar">
+            <div class="panel-header">
+                <span class="panel-title">板块</span>
+                <button class="btn-ghost" onclick="ui.createSector()" title="新建板块">+</button>
+            </div>
+            <div id="sector-tree" class="nav-tree"></div>
+        </nav>
+
+        <!-- 可拖拽分隔条：板块 ←→ 股票 -->
+        <div id="resize-handle-s2m" title="拖拽调整宽度"></div>
+
+        <!-- 中间+右侧（可拖拽分隔） -->
+        <div id="center-area">
+            <!-- 股票面板 -->
+            <section id="main">
+                <div class="panel-header">
+                    <span class="panel-title" id="sector-title">选择板块</span>
+                    <span class="sector-title-change flat" id="sector-title-change">--</span>
+                    <div class="panel-actions" id="sector-actions" style="display:none">
+                        <button class="btn-ghost" onclick="ui.openSectorConfig()" title="板块配置">⚙</button>
+                        <button class="btn-ghost" onclick="ui.addStockToCurrentSector()">+ 标的</button>
+                        <button class="btn-ghost" onclick="ui.editSector()">✎</button>
+                        <button class="btn-ghost btn-danger" onclick="ui.deleteSector()">✕</button>
+                    </div>
+                </div>
+
+                <!-- 标签栏 -->
+                <div id="sector-detail-panel" class="sector-detail-panel" style="display:none">
+                    <div class="sdp-row">
+                        <div class="sdp-stat">
+                            <span class="sdp-label">板块涨跌</span>
+                            <span class="sdp-value" id="sdp-chg">--</span>
+                        </div>
+                        <div class="sdp-stat">
+                            <span class="sdp-label">换手率</span>
+                            <span class="sdp-value" id="sdp-turnover">--</span>
+                        </div>
+                        <div class="sdp-stat">
+                            <span class="sdp-label">股票数</span>
+                            <span class="sdp-value" id="sdp-count">--</span>
+                        </div>
+                    </div>
+                    <div class="sdp-row sdp-lists">
+                        <div class="sdp-list">
+                            <div class="sdp-list-title up">领涨</div>
+                            <div class="sdp-list-body" id="sdp-gainers"></div>
+                        </div>
+                        <div class="sdp-list">
+                            <div class="sdp-list-title down">领跌</div>
+                            <div class="sdp-list-body" id="sdp-losers"></div>
+                        </div>
+                        <div class="sdp-list">
+                            <div class="sdp-list-title">贡献榜</div>
+                            <div class="sdp-list-body" id="sdp-contributors"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-bar" style="gap:4px;flex-wrap:wrap">
+                    <button class="tab active" data-filter="all" onclick="ui.filterStocks('all')">全部 <span id="count-all">0</span></button>
+                    <button class="tab" data-filter="core" onclick="ui.filterStocks('core')">核心 <span id="count-core">0</span></button>
+                    <button class="tab" data-filter="focus" onclick="ui.filterStocks('focus')">关注 <span id="count-focus">0</span></button>
+                    <button class="tab" data-filter="monitor" onclick="ui.filterStocks('monitor')">观察 <span id="count-observation">0</span></button>
+                    <button class="tab" data-filter="associate" onclick="ui.filterStocks('associate')">关联 <span id="count-associate">0</span></button>
+                    <span style="margin-left:auto;display:flex;gap:6px;align-items:center;padding-right:4px">
+                        <label style="display:flex;align-items:center;gap:3px;cursor:pointer;font-size:11px;font-family:var(--mono);color:var(--text-dim)"><input type="checkbox" id="chk-core" checked onchange="ui.toggleLabelVisible('core',this.checked)">核心</label>
+                        <label style="display:flex;align-items:center;gap:3px;cursor:pointer;font-size:11px;font-family:var(--mono);color:var(--text-dim)"><input type="checkbox" id="chk-focus" checked onchange="ui.toggleLabelVisible('focus',this.checked)">关注</label>
+                        <label style="display:flex;align-items:center;gap:3px;cursor:pointer;font-size:11px;font-family:var(--mono);color:var(--text-dim)"><input type="checkbox" id="chk-monitor" checked onchange="ui.toggleLabelVisible('monitor',this.checked)">观察</label>
+                        <label style="display:flex;align-items:center;gap:3px;cursor:pointer;font-size:11px;font-family:var(--mono);color:var(--text-dim)"><input type="checkbox" id="chk-associate" checked onchange="ui.toggleLabelVisible('associate',this.checked)">关联</label>
+                    </span>
+                </div>
+
+                <!-- 股票列表 -->
+                <div id="stock-list" class="stock-list"></div>
+                <!-- 笔记下拉 overlay — 跟 stock-list 平级,renderStockList 不会吞它 -->
+                <div id="note-overlay"></div>
+            </section>
+
+            <!-- 可拖拽分隔条 -->
+            <div id="resize-handle" title="拖拽调整宽度"></div>
+
+            <!-- 右侧：详情面板 -->
+            <aside id="detail-panel">
+                <div id="detail-empty" class="empty-hint">← 选择板块查看标的</div>
+            <div id="stock-detail" style="display:none">
+                <div class="detail-header" id="detail-header">
+                    <div class="detail-name-row">
+                        <span class="detail-name" id="detail-name">--</span>
+                        <span class="detail-code" id="detail-code">--</span>
+                        <span class="board-tag" id="detail-board">--</span>
+                    </div>
+                    <div class="detail-price-row">
+                        <span class="price-lg" id="q-last">--</span>
+                        <span class="change-lg" id="q-change">--</span>
+                    </div>
+                </div>
+
+                <div class="detail-grid" id="quote-grid">
+                    <div class="grid-item"><span class="grid-label">今开/昨收</span><span class="grid-value" id="q-open">--</span></div>
+                    <div class="grid-item"><span class="grid-label">高/低</span><span class="grid-value" id="q-high">--</span></div>
+                    <div class="grid-item"><span class="grid-label">总市值/流通</span><span class="grid-value" id="q-low">--</span></div>
+                    <div class="grid-item"><span class="grid-label">成交量/额</span><span class="grid-value" id="q-volume">--</span></div>
+                    <div class="grid-item"><span class="grid-label">换手率</span><span class="grid-value" id="q-amount">--</span></div>
+                    <div class="grid-item"><span class="grid-label">涨跌停</span><span class="grid-value" id="q-limit">--</span></div>
+                </div>
+
+                <!-- 走势图 -->
+                <div class="chart-area" id="chart-area" style="display:none">
+                    <div class="chart-tabs">
+                        <button class="tab active" id="tab-minute" onclick="Chart.switchTab('minute')">分时</button>
+                        <button class="tab" id="tab-kline" onclick="Chart.switchTab('kline')">日K</button>
+                    </div>
+                    <div id="main-chart" style="height:200px"></div>
+                </div>
+
+                <!-- 笔记区 -->
+                <div class="notes-area" id="notes-area" style="display:none">
+                    <div class="notes-header">
+                        <span class="panel-title">📝 笔记</span>
+                        <button class="btn-primary" id="btn-note-action" onclick="ui.createNote()" style="font-size:11px;padding:2px 8px">+ 新建</button>
+                    </div>
+                    <div id="notes-list" class="notes-list"></div>
+
+                    <!-- 笔记编辑器（与列表二选一显示） -->
+                    <div id="note-editor" style="display:none; flex-direction:column; flex:1; border: 1px solid var(--accent); margin: 6px; border-radius: 4px; overflow:hidden;">
+                        <div class="editor-toolbar" style="background:var(--surface2); padding:6px 10px; display:flex; flex-direction:column; gap:6px;">
+                            <input id="note-title-input" placeholder="标题（选填，不超过15字）" maxlength="15" class="note-title-input" style="background:var(--bg); border:1px solid var(--border); padding:4px 8px; border-radius:3px;">
+                            <div style="display:flex; gap:6px; align-items:center;">
+                                <div class="tab-bar" style="flex:1">
+                                    <button class="tab active" id="btn-edit" onclick="ui.switchNoteTab('edit')">编辑</button>
+                                    <button class="tab" id="btn-preview" onclick="ui.switchNoteTab('preview')">预览</button>
+                                </div>
+                                <button class="btn-secondary" onclick="ui.cancelNote()" style="font-size:11px;padding:2px 8px">取消</button>
+                                <button class="btn-primary" onclick="ui.saveNote()" style="font-size:11px;padding:2px 8px">保存</button>
+                            </div>
+                        </div>
+                        <textarea id="note-body-input" placeholder="写笔记，支持 Markdown..." class="note-body" style="flex:1; min-height:120px;"></textarea>
+                        <div id="note-preview" class="note-preview markdown-body" style="display:none; flex:1; min-height:120px;"></div>
+                        <div style="padding:6px 10px; border-top:1px solid var(--border);">
+                            <input id="note-tags-input" placeholder="标签，逗号分隔" style="width:100%; background:var(--bg); border:1px solid var(--border); padding:4px 8px; border-radius:3px; font-size:11px;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        </div>
+    </div>
+</div>
+
+<!-- 通用模态框 -->
+<div id="modal-overlay">
+    <div id="modal-box">
+        <div class="modal-header">
+            <span id="modal-title"></span>
+            <button class="btn-ghost" onclick="ui.closeModal()">✕</button>
+        </div>
+        <div id="modal-body"></div>
+    </div>
+</div>
+
+<script src="/static/util.js"></script>
+<script src="/static/chart.js"></script>
+<script src="/static/sector.js"></script>
+<script src="/static/stocklist.js"></script>
+<script src="/static/notes.js"></script>
+<script src="/static/modal.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

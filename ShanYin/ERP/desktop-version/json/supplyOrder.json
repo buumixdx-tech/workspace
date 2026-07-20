@@ -1,0 +1,110 @@
+{
+    "supplyOrder": {
+        "orderId": "SO20251223001",
+        "orderTime": "2025-12-23T14:30:00+08:00",
+        "customer": {
+            "customer_id": "CUST00123",
+            "name": "华东连锁超市集团",
+            "businessId": "BUS-EAST-001"
+        },
+        "summary": {
+            "totalSkus": 3,
+            "totalQuantity": 2450,
+            "totalAmount": 28750.00,
+            "skuSummaryList": [
+                {
+                    "skuId": "SKU-1001",
+                    "skuName": "500ml 矿泉水",
+                    "unitPrice": 2.50,
+                    "totalQuantity": 1000,
+                    "subtotalAmount": 2500.00
+                },
+                {
+                    "skuId": "SKU-2005",
+                    "skuName": "5kg 大米",
+                    "unitPrice": 28.00,
+                    "totalQuantity": 80,
+                    "subtotalAmount": 2240.00
+                },
+                {
+                    "skuId": "SKU-3012",
+                    "skuName": "12卷装抽纸",
+                    "unitPrice": 12.50,
+                    "totalQuantity": 1370,
+                    "subtotalAmount": 17125.00
+                }
+            ]
+        },
+        "points": [
+            {
+                "pointId": "LOC-SH-001",
+                "pointName": "上海静安旗舰店",
+                "address": "上海市静安区南京西路123号",
+                "contactPerson": "张经理",
+                "contactPhone": "138****1234",
+                "items": [
+                    {
+                        "skuId": "SKU-1001",
+                        "quantity": 300,
+                        "unitPrice": 2.50,
+                        "amount": 750.00
+                    },
+                    {
+                        "skuId": "SKU-3012",
+                        "quantity": 200,
+                        "unitPrice": 12.50,
+                        "amount": 2500.00
+                    }
+                ]
+            },
+            {
+                "pointId": "LOC-SH-005",
+                "pointName": "上海徐家汇分店",
+                "address": "上海市徐汇区漕溪北路88号",
+                "contactPerson": "李主管",
+                "contactPhone": "139****5678",
+                "items": [
+                    {
+                        "skuId": "SKU-1001",
+                        "quantity": 250,
+                        "unitPrice": 2.50,
+                        "amount": 625.00
+                    },
+                    {
+                        "skuId": "SKU-2005",
+                        "quantity": 20,
+                        "unitPrice": 28.00,
+                        "amount": 560.00
+                    },
+                    {
+                        "skuId": "SKU-3012",
+                        "quantity": 300,
+                        "unitPrice": 12.50,
+                        "amount": 3750.00
+                    }
+                ]
+            },
+            {
+                "pointId": "LOC-NJ-012",
+                "pointName": "南京新街口分店",
+                "address": "南京市秦淮区中山南路101号",
+                "contactPerson": "王店长",
+                "contactPhone": "150****9012",
+                "items": [
+                    {
+                        "skuId": "SKU-2005",
+                        "quantity": 60,
+                        "unitPrice": 28.00,
+                        "amount": 1680.00
+                    },
+                    {
+                        "skuId": "SKU-3012",
+                        "quantity": 870,
+                        "unitPrice": 12.50,
+                        "amount": 10875.00
+                    }
+                ]
+            }
+        ]
+    }
+}

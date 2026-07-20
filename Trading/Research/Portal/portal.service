@@ -1,0 +1,17 @@
+[Unit]
+Description=buumicloud Portal (主域根入口)
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/portal
+Environment="PATH=/opt/portal/venv/bin"
+EnvironmentFile=/opt/portal/.env
+ExecStart=/opt/portal/venv/bin/gunicorn -b 127.0.0.1:7080 -w 2 --timeout 30 --access-logfile - app:app
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

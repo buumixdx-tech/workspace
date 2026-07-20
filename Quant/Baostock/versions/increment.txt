@@ -1,0 +1,46 @@
+from common import *
+import numpy as np
+
+def get_existing_date_ranges():
+    """获取每只股票在数据库中的最早日期"""
+    ch_client = get_clickhouse_client()
+    result = ch_client.execute("""
+    SELECT code, min(date) as min_date
+    FROM daily_k
+    GROUP BY code
+    """)
+    return {code: min_date for code, min_date in result}
+
+def fetch_incremental_data(stock_codes):
+    """并行获取增量历史数据"""
+    ch_client = get_clickhouse_client()
+    date_ranges = get_existing_date_ranges()
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        futures = []
+        for code in stock_codes:
+            # 获取该股票在数据库中的最早日期
+            min_date = date_ranges.get(code, datetime.today().strftime("%Y-%m-%d"))
+            
+            # 计算需要拉取的日期范围
+            start_date = HIST_START_DATE
+            end_date = (datetime.strptime(min_date, "%Y-%m-%d") - timedelta(days=1)).strftime("%Y-%m-%d")
+            
+            if start_date < end_date:
+                futures.append(executor.submit(
+                    fetch_stock_data, code, start_date, end_date
+                ))
+        
+        for future in concurrent.futures.as_completed(futures):
+            df = future.result()
+            if not df.empty:
+                bulk_insert_to_clickhouse(ch_client, df)
+            time.sleep(0.1)  # 控制请求频率
+
+if __name__ == "__main__":
+    logger.info("===== 开始增量历史数据导入 =====")
+    stock_codes = get_all_stock_codes()
+    logger.info(f"共获取 {len(stock_codes)} 只股票")
+    
+    fetch_incremental_data(stock_codes)
+    logger.info("===== 增量历史数据导入完成 =====")

@@ -1,0 +1,10 @@
+import sqlite3, hashlib
+conn = sqlite3.connect('/opt/mycloud/mycloud.db')
+pwd = hashlib.sha256('xdxis1234'.encode()).hexdigest()
+conn.execute('DELETE FROM users WHERE username=?', ('buumi',))
+conn.execute('INSERT INTO users (username, password) VALUES (?, ?)', ('buumi', pwd))
+conn.commit()
+cur = conn.execute('SELECT username FROM users')
+print('Users:', cur.fetchall())
+conn.close()
+print('Done!')

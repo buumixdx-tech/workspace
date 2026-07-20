@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shadcn UI风格 - 闪饮管理系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #ffffff;
+            color: #09090b;
+            /* Zinc 950 */
+        }
+
+        /* Shadcn 核心风格：极其细碎的边框和特定的灰色阴影 */
+        .shadcn-card {
+            border: 1px solid #e4e4e7;
+            /* Zinc 200 */
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            /* rounded-xl */
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        .shadcn-btn-primary {
+            background-color: #18181b;
+            /* Zinc 900 */
+            color: #fafafa;
+            transition: opacity 0.2s;
+        }
+
+        .shadcn-btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        .shadcn-btn-outline {
+            border: 1px solid #e4e4e7;
+            background-color: transparent;
+        }
+
+        .shadcn-btn-outline:hover {
+            background-color: #f4f4f5;
+            /* Zinc 100 */
+        }
+
+        .shadcn-input {
+            border: 1px solid #e4e4e7;
+            transition: ring 0.2s;
+        }
+
+        .shadcn-input:focus {
+            outline: none;
+            ring: 2px solid #a1a1aa;
+            ring-offset: 2px;
+        }
+
+        /* 模拟 Tabs 选中效果 */
+        .tab-active {
+            background-color: #ffffff;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen">
+
+    <!-- 顶栏 -->
+    <header class="border-b border-zinc-200">
+        <div class="flex h-16 items-center px-8">
+            <div class="flex items-center space-x-4">
+                <div
+                    class="w-8 h-8 rounded bg-zinc-900 flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                    SY</div>
+                <nav class="flex items-center space-x-6 text-sm font-medium">
+                    <a href="#" class="text-zinc-900 transition-colors">概览</a>
+                    <a href="#" class="text-zinc-500 hover:text-zinc-900 transition-colors">业务</a>
+                    <a href="#" class="text-zinc-500 hover:text-zinc-900 transition-colors">物流</a>
+                    <a href="#" class="text-zinc-500 hover:text-zinc-900 transition-colors">设置</a>
+                </nav>
+            </div>
+            <div class="ml-auto flex items-center space-x-4">
+                <div class="relative">
+                    <input type="text" placeholder="搜索..."
+                        class="w-64 h-9 px-3 py-1 text-sm shadcn-input rounded-md bg-zinc-50 focus:bg-white">
+                </div>
+                <div
+                    class="w-8 h-8 rounded-full bg-zinc-100 border border-zinc-200 flex items-center justify-center text-[10px] font-bold">
+                    AD</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主展示区 -->
+    <main class="p-8 max-w-7xl mx-auto space-y-8">
+
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-3xl font-bold tracking-tight">控制台</h2>
+                <p class="text-zinc-500 mt-1">欢迎回来，这是闪饮业务今日的运行情况。</p>
+            </div>
+            <div class="flex space-x-2">
+                <button class="shadcn-btn-outline h-9 px-4 py-2 rounded-md text-sm font-medium">下载报告</button>
+                <button class="shadcn-btn-primary h-9 px-4 py-2 rounded-md text-sm font-medium">新增业务</button>
+            </div>
+        </div>
+
+        <!-- 模拟 Tabs -->
+        <div class="inline-flex h-10 items-center justify-center rounded-lg bg-zinc-100 p-1 text-zinc-500 w-auto">
+            <button
+                class="tab-active inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-1.5 text-sm transition-all">全网统计</button>
+            <button
+                class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-1.5 text-sm transition-all hover:text-zinc-900">财务明细</button>
+            <button
+                class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-1.5 text-sm transition-all hover:text-zinc-900">物流监控</button>
+        </div>
+
+        <!-- 核心指标 -->
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div class="shadcn-card p-6">
+                <div class="flex h-5 items-center justify-between space-y-0 pb-2">
+                    <p class="text-xs font-medium text-zinc-500 uppercase tracking-wider">总营收 (本月)</p>
+                    <svg class="h-4 w-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div class="text-2xl font-bold mt-2">¥45,231.89</div>
+                <p class="text-xs text-zinc-500 mt-1">+20.1% <span class="text-zinc-400 italic">较上月同期</span></p>
+            </div>
+            <div class="shadcn-card p-6">
+                <div class="flex h-5 items-center justify-between space-y-0 pb-2">
+                    <p class="text-xs font-medium text-zinc-500 uppercase tracking-wider">新增签约</p>
+                    <svg class="h-4 w-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                </div>
+                <div class="text-2xl font-bold mt-2">+23</div>
+                <p class="text-xs text-zinc-500 mt-1">+180.1% <span class="text-zinc-400 italic">活跃增长中</span></p>
+            </div>
+            <div class="shadcn-card p-6">
+                <div class="flex h-5 items-center justify-between space-y-0 pb-2">
+                    <p class="text-xs font-medium text-zinc-500 uppercase tracking-wider">库存警告</p>
+                    <svg class="h-4 w-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                </div>
+                <div class="text-2xl font-bold mt-2 text-red-600">12 组</div>
+                <p class="text-xs text-zinc-500 mt-1">需尽快补充 2 个仓位</p>
+            </div>
+            <div class="shadcn-card p-6 border-zinc-900 bg-zinc-900 text-white">
+                <div class="flex h-5 items-center justify-between space-y-0 pb-2">
+                    <p class="text-xs font-medium text-zinc-400 uppercase tracking-wider">待处理工单</p>
+                    <svg class="h-4 w-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                </div>
+                <div class="text-2xl font-bold mt-2">7 条</div>
+                <p class="text-xs text-zinc-400 mt-1">优先级: 紧急</p>
+            </div>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <!-- 模拟图表区域 -->
+            <div class="shadcn-card lg:col-span-4 p-6">
+                <div class="flex flex-col space-y-1.5 pb-4">
+                    <h3 class="font-semibold leading-none tracking-tight">趋势总览</h3>
+                </div>
+                <div class="h-[300px] w-full bg-zinc-50 rounded flex items-end justify-around p-4 gap-2">
+                    <!-- 模拟柱状图 -->
+                    <div class="w-full bg-zinc-200 rounded-t-sm" style="height: 40%"></div>
+                    <div class="w-full bg-zinc-200 rounded-t-sm" style="height: 60%"></div>
+                    <div class="w-full bg-zinc-900 rounded-t-sm" style="height: 85%"></div>
+                    <div class="w-full bg-zinc-200 rounded-t-sm" style="height: 50%"></div>
+                    <div class="w-full bg-zinc-200 rounded-t-sm" style="height: 75%"></div>
+                    <div class="w-full bg-zinc-200 rounded-t-sm" style="height: 65%"></div>
+                    <div class="w-full bg-zinc-400 rounded-t-sm" style="height: 90%"></div>
+                    <div class="w-full bg-zinc-200 rounded-t-sm" style="height: 30%"></div>
+                </div>
+            </div>
+
+            <!-- 最近动态区域 -->
+            <div class="shadcn-card lg:col-span-3 p-6 flex flex-col">
+                <div class="flex flex-col space-y-1.5 pb-4">
+                    <h3 class="font-semibold leading-none tracking-tight">最新业务动态</h3>
+                    <p class="text-sm text-zinc-500">本月共有 265 次状态变迁。</p>
+                </div>
+                <div class="space-y-8 flex-1">
+                    <div class="flex items-center">
+                        <div
+                            class="w-9 h-9 rounded-full bg-zinc-100 flex items-center justify-center font-bold text-xs">
+                            A</div>
+                        <div class="ml-4 space-y-1">
+                            <p class="text-sm font-medium leading-none">北京朝阳点位发货</p>
+                            <p class="text-xs text-zinc-500">VC #10293 • 刚刚</p>
+                        </div>
+                        <div class="ml-auto font-medium text-sm">已触发</div>
+                    </div>
+                    <div class="flex items-center">
+                        <div
+                            class="w-9 h-9 rounded-full bg-zinc-100 flex items-center justify-center font-bold text-xs">
+                            C</div>
+                        <div class="ml-4 space-y-1">
+                            <p class="text-sm font-medium leading-none">押金退还已到帐</p>
+                            <p class="text-xs text-zinc-500">张三(渠道客户) • 2小时前</p>
+                        </div>
+                        <div class="ml-auto font-medium text-sm">+¥1,999.00</div>
+                    </div>
+                    <div class="flex items-center">
+                        <div
+                            class="w-9 h-9 rounded-full bg-zinc-100 flex items-center justify-center font-bold text-xs">
+                            M</div>
+                        <div class="ml-4 space-y-1">
+                            <p class="text-sm font-medium leading-none">物料库存低于阈值</p>
+                            <p class="text-xs text-zinc-500">仓库 A1 • 5小时前</p>
+                        </div>
+                        <div class="ml-auto text-red-600 font-bold text-xs">!</div>
+                    </div>
+                    <div class="flex items-center">
+                        <div
+                            class="w-9 h-9 rounded-full bg-zinc-100 flex items-center justify-center font-bold text-xs">
+                            K</div>
+                        <div class="ml-4 space-y-1">
+                            <p class="text-sm font-medium leading-none">新供应链协议签署</p>
+                            <p class="text-xs text-zinc-500">XX设备供应商 • 昨天</p>
+                        </div>
+                        <div class="ml-auto font-medium text-sm">已归档</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="shadcn-card">
+            <div class="p-6">
+                <h3 class="font-semibold leading-none tracking-tight mb-4">待审核心列表</h3>
+                <div class="w-full overflow-auto">
+                    <table class="w-full text-sm">
+                        <thead class="border-b border-zinc-100 text-zinc-500">
+                            <tr>
+                                <th class="h-10 px-4 text-left font-medium">编号</th>
+                                <th class="h-10 px-4 text-left font-medium">关联对象</th>
+                                <th class="h-10 px-4 text-left font-medium">预警级别</th>
+                                <th class="h-10 px-4 text-left font-medium">截止时间</th>
+                                <th class="h-10 px-4 text-right font-medium">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-zinc-50">
+                            <tr class="hover:bg-zinc-50/50 transition-colors">
+                                <td class="p-4 font-medium">RULE-2024-001</td>
+                                <td class="p-4">虚拟合同 #10293</td>
+                                <td class="p-4"><span
+                                        class="px-2 py-0.5 rounded bg-red-100 text-red-700 text-[10px] font-bold">CRITICAL</span>
+                                </td>
+                                <td class="p-4 text-zinc-500">2024-01-06 18:00</td>
+                                <td class="p-4 text-right"><button
+                                        class="text-zinc-400 hover:text-zinc-900 font-bold">...</button></td>
+                            </tr>
+                            <tr class="hover:bg-zinc-50/50 transition-colors">
+                                <td class="p-4 font-medium">RULE-2024-012</td>
+                                <td class="p-4">物流单 #L-9844</td>
+                                <td class="p-4"><span
+                                        class="px-2 py-0.5 rounded bg-amber-100 text-amber-700 text-[10px] font-bold">WARNING</span>
+                                </td>
+                                <td class="p-4 text-zinc-500">2024-01-08 09:00</td>
+                                <td class="p-4 text-right"><button
+                                        class="text-zinc-400 hover:text-zinc-900 font-bold">...</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+</body>
+
+</html>

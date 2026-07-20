@@ -1,0 +1,534 @@
+{
+  "database": "business_system.db (SQLite)",
+  "tables": {
+    "channel_customers": {
+      "description": "渠道客户",
+      "columns": {
+        "id": {"type": "INTEGER", "pk": true},
+        "name": {"type": "VARCHAR(255)", "nullable": false},
+        "info": {"type": "TEXT", "description": "整体信息"},
+        "created_at": {"type": "DATETIME"}
+      },
+      "relationships": {}
+    },
+
+    "points": {
+      "description": "点位：存储所有客户的所有点位和所有仓的信息",
+      "columns": {
+        "id": {"type": "INTEGER", "pk": true},
+        "customer_id": {"type": "INTEGER", "fk": "channel_customers.id", "nullable": true},
+        "supplier_id": {"type": "INTEGER", "fk": "suppliers.id", "nullable": true},
+        "name": {"type": "VARCHAR(255)", "nullable": false},
+        "address": {"type": "VARCHAR(512)"},
+        "type": {"type": "VARCHAR(50)", "description": "运营点位、客户仓、自有仓、供应商仓"},
+        "receiving_address": {"type": "VARCHAR(512)"}
+      },
+      "relationships": {
+        "customer": "channel_customers",
+        "supplier": "suppliers"
+      }
+    },
+
+    "suppliers": {
+      "description": "供应商",
+      "columns": {
+        "id": {"type": "INTEGER", "pk": true},
+        "name": {"type": "VARCHAR(255)", "nullable": false},
+        "category": {"type": "VARCHAR(100)", "description": "设备、物料、兼备"},
+        "address": {"type": "VARCHAR(512)"},
+        "qualifications": {"type": "TEXT"},
+        "info": {"type": "JSON", "description": "额外资质或明细"}
+      },
+      "relationships": {}
+    },
+
+    "skus": {
+      "description": "SKU：存储所有供应商的所有SKU",
+      "columns": {
+        "id": {"type": "INTEGER", "pk": true},
+        "supplier_id": {"type": "INTEGER", "fk": "suppliers.id"},
+        "name": {"type": "VARCHAR(255)", "nullable": false},
+        "type_level1": {"type": "VARCHAR(50)", "description": "设备 or 物料"},
+        "type_level2": {"type": "VARCHAR(100)", "description": "Sub-category"},
+        "model": {"type": "VARCHAR(100)"},
+        "description": {"type": "TEXT"},
+        "certification": {"type": "TEXT"},
+        "params": {"type": "JSON", "description": "参数JSON"}
+      },
+      "indexes": ["ix_eq_sku_id"],
+      "relationships": {
+        "supplier": "suppliers"
+      }
+    },
+
+    "equipment_inventory": {
+      "description": "设备库存：记录所有已购入设备的信息",
+      "columns": {
+        "id": {"type": "INTEGER", "pk": true},
+        "sku_id": {"type": "INTEGER", "fk": "skus.id"},
+        "sn": {"type": "VARCHAR(100)", "unique": true, "description": "设备序列号"},
+        "operational_status": {"type": "VARCHAR(50)", "description": "库存、运营、处置", "enum": ["库存", "投放", "投入运行", "退库", "处置"]},
+        "device_status": {"type": "VARCHAR(50)", "description": "正常、维修、损坏、故障，维护、锁机"},
+        "virtual_contract_id": {"type": "INTEGER", "fk": "virtual_contracts.id", "nullable": true},
+        "point_id": {"type": "INTEGER", "fk": "points.id", "nullable": true},
+        "deposit_amount": {"type": "FLOAT", "default": 0.0},
+        "deposit_timestamp": {"type": "DATETIME"}
+      },
+      "indexes": ["ix_eq_vc_id", "ix_eq_point_id", "ix_eq_op_status", "ix_eq_sku_id"],
+      "relationships": {
+        "sku": "skus",
+        "point": "points"
+      }
+    },
+
+    "material_inventory": {
+      "description": "物料库存：记录所有已购入物料的全局信息（每个SKU唯一）",
+      "columns": {
+        "id": {"type": "INTEGER", "pk": true},
+        "sku_id": {"type": "INTEGER", "fk": "skus.id", "unique": true},
+        "stock_distribution": {"type": "JSON", "description": "库存分布JSON: {仓库名称: 数量}"},
+        "average_price": {"type": "FLOAT", "default": 0.0},
+        "total_balance": {"type": "FLOAT", "default": 0.0}
+      },
+      "relationships": {
+        "sku": "skus"
+      }
+    },
+
+    "contracts": {
+      "description": "合同：记录所有业务相关正式合同",
+      "columns": {
+        "id": {"type": "INTEGER", "pk": true},
+        "contract_number": {"type": "VARCHAR(100)", "unique": true},
+        "type": {"type": "VARCHAR(100)", "description": "合作合同、设备采购合同、物料采购合同、外部合作合同"},
+        "status": {"type": "VARCHAR(50)", "description": "签约完成、生效、过期、终止"},
+        "parties": {"type": "JSON", "description": "签约方信息"},
+        "content": {"type": "JSON", "description": "合同详情"},
+        "signed_date": {"type": "DATETIME"},
+        "effective_date": {"type": "DATETIME"},
+        "expiry_date": {"type": "DATETIME"},
+        "timestamp": {"type": "DATETIME", "default": "datetime.now"}
+      },
+      "relationships": {}
+    },
+
+    "virtual_contracts": {
+      "description": "虚拟合同：一份供货或合作合同通常分批执行",
+      "columns": {
+        "id": {"type": "INTEGER", "pk": true},
+        "description": {"type": "VARCHAR(512)"},
+        "business_id": {"type": "INTEGER", "fk": "business.id", "nullable": true},
+        "supply_chain_id": {"type": "INTEGER", "fk": "supply_chains.id", "nullable": true},
+        "related_vc_id": {"type": "INTEGER", "fk": "virtual_contracts.id", "nullable": true, "description": "关联VC（如退货关联原合同）"},
+        "type": {"type": "VARCHAR(100)", "description": "设备采购、物料供应、物料采购、退货、设备维护", "enum": ["设备采购", "物料供应", "物料采购", "库存采购", "库存拨付", "退货"]},
+        "summary": {"type": "TEXT"},
+        "elements": {"type": "JSON", "description": "统一结构: {elements: [{id, shipping_point_id, receiving_point_id, sku_id, qty, price, deposit, subtotal, sn_list}], total_amount, payment_terms}"},
+        "return_direction": {"type": "VARCHAR(50)", "nullable": true, "description": "退货方向: CUSTOMER_TO_US / US_TO_SUPPLIER"},
+        "deposit_info": {"type": "JSON", "description": "应收/实收押金、总额、最后流水ID、调整原因"},
+        "status": {"type": "VARCHAR(50)", "description": "执行，完成、终止", "enum": ["执行", "完成", "终止"]},
+        "subject_status": {"type": "VARCHAR(50)", "description": "执行、发货、签收、完成", "enum": ["执行", "发货", "在途", "签收", "完成"]},
+        "cash_status": {"type": "VARCHAR(50)", "description": "执行、预付，完成", "enum": ["执行", "预付", "完成"]},
+        "status_timestamp": {"type": "DATETIME"},
+        "subject_status_timestamp": {"type": "DATETIME"},
+        "cash_status_timestamp": {"type": "DATETIME"}
+      },
+      "indexes": ["ix_vc_business_id", "ix_vc_status", "ix_vc_business_status", "ix_vc_type", "ix_vc_status_timestamp", "ix_vc_supply_chain"],
+      "relationships": {
+        "business": "business",
+        "supply_chain": "supply_chains",
+        "financial_entries": "financial_journal",
+        "status_logs": "vc_status_logs",
+        "logistics": "logistics",
+        "cash_flows": "cash_flows"
+      }
+    },
+
+    "vc_status_logs": {
+      "description": "虚拟合同状态阶段详细时间戳记录",
+      "columns": {
+        "id": {"type": "INTEGER", "pk": true},
+        "vc_id": {"type": "INTEGER", "fk": "virtual_contracts.id"},
+        "category": {"type": "VARCHAR(50)", "description": "status / subject / cash"},
+        "status_name": {"type": "VARCHAR(50)", "description": "状态名称"},
+        "timestamp": {"type": "DATETIME", "default": "datetime.now"}
+      },
+      "relationships": {
+        "virtual_contract": "virtual_contracts"
+      }
+    },
+
+    "vc_history": {
+      "description": "虚拟合同历史版本",
+      "columns": {
+        "id": {"type": "INTEGER", "pk": true},
+        "vc_id": {"type": "INTEGER", "fk": "virtual_contracts.id"},
+        "original_data": {"type": "JSON"},
+        "change_date": {"type": "DATETIME", "default": "datetime.now"},
+        "change_reason": {"type": "TEXT"}
+      },
+      "relationships": {}
+    },
+
+    "finance_accounts": {
+      "description": "会计科目表：管理一级/二级科目及交易对手",
+      "columns": {
+        "id": {"type": "INTEGER", "pk": true},
+        "category": {"type": "VARCHAR(50)", "description": "资产、负债、权益、损益"},
+        "level1_name": {"type": "VARCHAR(100)", "nullable": false},
+        "level2_name": {"type": "VARCHAR(100)", "description": "交易对手名称"},
+        "counterpart_type": {"type": "VARCHAR(50)", "description": "客户(Customer)、供应商(Supplier)、合作伙伴(Partner)、内部(Internal)"},
+        "counterpart_id": {"type": "INTEGER"},
+        "direction": {"type": "VARCHAR(20)", "description": "借(Debit)、贷(Credit)"}
+      },
+      "relationships": {
+        "entries": "financial_journal"
+      }
+    },
+
+    "financial_journal": {
+      "description": "财务凭证/分录表：记录复式记账明细",
+      "columns": {
+        "id": {"type": "INTEGER", "pk": true},
+        "voucher_no": {"type": "VARCHAR(100)", "description": "凭证分组号"},
+        "account_id": {"type": "INTEGER", "fk": "finance_accounts.id"},
+        "debit": {"type": "FLOAT", "default": 0.0},
+        "credit": {"type": "FLOAT", "default": 0.0},
+        "summary": {"type": "TEXT"},
+        "ref_type": {"type": "VARCHAR(50)", "description": "物流(Logistics)、资金流(CashFlow)"},
+        "ref_id": {"type": "INTEGER"},
+        "ref_vc_id": {"type": "INTEGER", "fk": "virtual_contracts.id"},
+        "transaction_date": {"type": "DATETIME", "default": "datetime.now"}
+      },
+      "relationships": {
+        "account": "finance_accounts",
+        "virtual_contract": "virtual_contracts",
+        "cash_flow_record": "cash_flow_ledger"
+      }
+    },
+
+    "cash_flow_ledger": {
+      "description": "现金流量登记辅助表：针对性统计三大现金流",
+      "columns": {
+        "id": {"type": "INTEGER", "pk": true},
+        "journal_id": {"type": "INTEGER", "fk": "financial_journal.id"},
+        "main_category": {"type": "VARCHAR(50)", "description": "经营性，投资性、融资性"},
+        "direction": {"type": "VARCHAR(20)", "description": "流入、流出"},
+        "amount": {"type": "FLOAT"}
+      },
+      "relationships": {
+        "journal_entry": "financial_journal"
+      }
+    },
+
+    "external_partners": {
+      "description": "外部合作方",
+      "columns": {
+        "id": {"type": "INTEGER", "pk": true},
+        "type": {"type": "VARCHAR(100)", "description": "外包服务商、客户关联方、供应商关联方、其他"},
+        "name": {"type": "VARCHAR(255)"},
+        "address": {"type": "VARCHAR(512)"},
+        "content": {"type": "TEXT"}
+      },
+      "relationships": {}
+    },
+
+    "partner_relations": {
+      "description": "合作方关系表：记录合作方与业务/供应链/我方的关联",
+      "columns": {
+        "id": {"type": "INTEGER", "pk": true},
+        "partner_id": {"type": "INTEGER", "fk": "external_partners.id", "nullable": false},
+        "owner_type": {"type": "VARCHAR(50)", "nullable": false, "description": "business / supply_chain / ourselves"},
+        "owner_id": {"type": "INTEGER", "description": "OURSELVES时为NULL"},
+        "relation_type": {"type": "VARCHAR(100)", "nullable": false, "description": "合作模式"},
+        "remark": {"type": "TEXT"},
+        "established_at": {"type": "DATETIME", "default": "datetime.now"},
+        "ended_at": {"type": "DATETIME", "nullable": true, "description": "null = 有效"}
+      },
+      "indexes": ["ix_partner_relations_partner_id", "ix_partner_relations_owner"],
+      "unique_constraints": ["uq_partner_relation"],
+      "relationships": {}
+    },
+
+    "bank_accounts": {
+      "description": "资金账户",
+      "columns": {
+        "id": {"type": "INTEGER", "pk": true},
+        "owner_type": {"type": "VARCHAR(50)", "description": "客户(Customer)、供应商(Supplier)、我方(Ourselves)、合作伙伴(Partner)"},
+        "owner_id": {"type": "INTEGER"},
+        "account_info": {"type": "JSON", "description": "包含bank_name, account_no等"},
+        "is_default": {"type": "BOOLEAN", "default": false}
+      },
+      "relationships": {}
+    },
+
+    "business": {
+      "description": "业务：对具体业务开展的信息记录",
+      "columns": {
+        "id": {"type": "INTEGER", "pk": true},
+        "customer_id": {"type": "INTEGER", "fk": "channel_customers.id"},
+        "status": {"type": "VARCHAR(50)", "description": "前期接洽、业务评估、客户反馈，合作落地、业务开展、业务暂缓、业务终止"},
+        "timestamp": {"type": "DATETIME", "default": "datetime.now"},
+        "details": {"type": "JSON", "description": "记录业务演进历史，包含pricing/payment_terms/contract_id等"}
+      },
+      "relationships": {
+        "customer": "channel_customers"
+      }
+    },
+
+    "addon_business": {
+      "description": "附加业务政策（原子化）：依附于Business的有效期促销/补充协议",
+      "columns": {
+        "id": {"type": "INTEGER", "pk": true},
+        "business_id": {"type": "INTEGER", "fk": "business.id", "nullable": false},
+        "addon_type": {"type": "VARCHAR(50)", "nullable": false, "description": "PRICE_ADJUST / NEW_SKU / PAYMENT_TERMS"},
+        "status": {"type": "VARCHAR(20)", "default": "生效", "description": "生效 / 失效 / 过期"},
+        "sku_id": {"type": "INTEGER", "nullable": true, "description": "PRICE_ADJUST/NEW_SKU必填，PAYMENT_TERMS可空"},
+        "override_price": {"type": "FLOAT", "nullable": true},
+        "override_deposit": {"type": "FLOAT", "nullable": true},
+        "start_date": {"type": "DATETIME", "nullable": false},
+        "end_date": {"type": "DATETIME", "nullable": true, "description": "NULL = 永久有效"},
+        "remark": {"type": "TEXT", "nullable": true}
+      },
+      "indexes": ["ix_addon_biz_business_id", "ix_addon_biz_type_sku"],
+      "relationships": {
+        "business": "business"
+      }
+    },
+
+    "supply_chains": {
+      "description": "供应链：记录与某个供应商签订合同建立的供应链",
+      "columns": {
+        "id": {"type": "INTEGER", "pk": true},
+        "supplier_id": {"type": "INTEGER", "fk": "suppliers.id"},
+        "type": {"type": "VARCHAR(50)", "description": "物料 or 设备"},
+        "contract_id": {"type": "INTEGER", "fk": "contracts.id"},
+        "pricing_config": {"type": "JSON", "description": "兼容旧版定价配置"},
+        "payment_terms": {"type": "JSON", "description": "兼容旧版结算条款"}
+      },
+      "relationships": {
+        "supplier": "suppliers",
+        "items": "supply_chain_items"
+      }
+    },
+
+    "supply_chain_items": {
+      "description": "供应链协议明细：规范化存储每个SKU的价格约定",
+      "columns": {
+        "id": {"type": "INTEGER", "pk": true},
+        "supply_chain_id": {"type": "INTEGER", "fk": "supply_chains.id"},
+        "sku_id": {"type": "INTEGER", "fk": "skus.id"},
+        "price": {"type": "FLOAT", "description": "协议单价"},
+        "is_floating": {"type": "BOOLEAN", "default": false, "description": "是否为浮动价格"}
+      },
+      "relationships": {
+        "supply_chain": "supply_chains",
+        "sku": "skus"
+      }
+    },
+
+    "logistics": {
+      "description": "物流主单",
+      "columns": {
+        "id": {"type": "INTEGER", "pk": true},
+        "virtual_contract_id": {"type": "INTEGER", "fk": "virtual_contracts.id"},
+        "finance_triggered": {"type": "BOOLEAN", "default": false},
+        "status": {"type": "VARCHAR(50)", "description": "待发货、在途、签收，完成、终止", "enum": ["待发货", "在途", "签收", "完成", "终止"]},
+        "timestamp": {"type": "DATETIME", "default": "datetime.now"}
+      },
+      "relationships": {
+        "virtual_contract": "virtual_contracts",
+        "express_orders": "express_orders"
+      }
+    },
+
+    "express_orders": {
+      "description": "快递单",
+      "columns": {
+        "id": {"type": "INTEGER", "pk": true},
+        "logistics_id": {"type": "INTEGER", "fk": "logistics.id"},
+        "tracking_number": {"type": "VARCHAR(100)"},
+        "items": {"type": "JSON", "description": "SKU、数量"},
+        "address_info": {"type": "JSON"},
+        "status": {"type": "VARCHAR(50)", "description": "待发货、在途、签收", "enum": ["待发货", "在途", "签收"]},
+        "timestamp": {"type": "DATETIME", "default": "datetime.now"}
+      },
+      "relationships": {
+        "logistics": "logistics"
+      }
+    },
+
+    "cash_flows": {
+      "description": "资金流",
+      "columns": {
+        "id": {"type": "INTEGER", "pk": true},
+        "virtual_contract_id": {"type": "INTEGER", "fk": "virtual_contracts.id"},
+        "type": {"type": "VARCHAR(50)", "description": "预付、履约、罚金、押金、退还押金、退款、冲抵入金、冲抵支付", "enum": ["预付", "履约", "罚金", "押金", "退还押金", "退款", "冲抵入金", "冲抵支付"]},
+        "amount": {"type": "FLOAT"},
+        "payer_account_id": {"type": "INTEGER", "fk": "bank_accounts.id", "nullable": true},
+        "payee_account_id": {"type": "INTEGER", "fk": "bank_accounts.id", "nullable": true},
+        "finance_triggered": {"type": "BOOLEAN", "default": false},
+        "payment_info": {"type": "JSON", "description": "外部参考/交易代码"},
+        "voucher_path": {"type": "VARCHAR(512)", "description": "凭证文件路径"},
+        "description": {"type": "TEXT"},
+        "transaction_date": {"type": "DATETIME"},
+        "timestamp": {"type": "DATETIME", "default": "datetime.now"}
+      },
+      "indexes": ["ix_cf_vc_id", "ix_cf_type", "ix_cf_transaction_date", "ix_cf_vc_type"],
+      "relationships": {
+        "payer_account": "bank_accounts",
+        "payee_account": "bank_accounts",
+        "virtual_contract": "virtual_contracts"
+      }
+    },
+
+    "time_rules": {
+      "description": "时间规则：定义触发事件、目标事件及时间约束",
+      "columns": {
+        "id": {"type": "INTEGER", "pk": true},
+        "related_id": {"type": "INTEGER", "nullable": false, "description": "关联对象ID"},
+        "related_type": {"type": "VARCHAR(50)", "nullable": false, "description": "业务、供应链、虚拟合同、物流"},
+        "inherit": {"type": "INTEGER", "default": 0, "description": "0=自身定制, 1=近继承, 2=远继承"},
+        "party": {"type": "VARCHAR(100)", "description": "规则责任方(我方/客户/供应商)"},
+        "trigger_event": {"type": "VARCHAR(100)", "description": "触发事件类型(或绝对日期)"},
+        "tge_param1": {"type": "VARCHAR(255)"},
+        "tge_param2": {"type": "VARCHAR(255)"},
+        "trigger_time": {"type": "DATETIME", "description": "触发事件实际发生时间"},
+        "target_event": {"type": "VARCHAR(100)", "nullable": false, "description": "目标事件类型"},
+        "tae_param1": {"type": "VARCHAR(255)"},
+        "tae_param2": {"type": "VARCHAR(255)"},
+        "target_time": {"type": "DATETIME", "description": "目标事件实际发生时间"},
+        "offset": {"type": "INTEGER", "description": "偏移量数值"},
+        "unit": {"type": "VARCHAR(20)", "description": "自然日，工作日"},
+        "flag_time": {"type": "DATETIME", "description": "标杆时间(计算或绝对)"},
+        "direction": {"type": "VARCHAR(10)", "description": "before/after"},
+        "warning": {"type": "VARCHAR(20)", "description": "绿色、黄色、橙色、红色"},
+        "result": {"type": "VARCHAR(20)", "description": "合规、违规"},
+        "status": {"type": "VARCHAR(20)", "default": "生效", "description": "失效、生效、有结果、结束"},
+        "timestamp": {"type": "DATETIME", "default": "datetime.now", "description": "创建时间"},
+        "resultstamp": {"type": "DATETIME", "description": "结果确定时间"},
+        "endstamp": {"type": "DATETIME", "description": "规则结束时间"}
+      },
+      "relationships": {}
+    },
+
+    "system_events": {
+      "description": "系统事件表：记录所有领域事件，供AI及审计使用",
+      "columns": {
+        "id": {"type": "INTEGER", "pk": true},
+        "event_type": {"type": "VARCHAR(100)", "description": "VC_CREATED, LOGISTICS_SIGNED, AR_CLEARED等"},
+        "aggregate_type": {"type": "VARCHAR(50)", "description": "VirtualContract, CashFlow等"},
+        "aggregate_id": {"type": "INTEGER", "description": "具体的ID"},
+        "payload": {"type": "JSON", "description": "关键快照数据"},
+        "created_at": {"type": "DATETIME", "default": "datetime.now"},
+        "pushed_to_ai": {"type": "BOOLEAN", "default": false, "description": "AI是否已消费"}
+      },
+      "relationships": {}
+    },
+
+    "operation_transactions": {
+      "description": "操作事务表：记录所有写操作快照，支持回滚和撤销回滚",
+      "columns": {
+        "id": {"type": "INTEGER", "pk": true},
+        "action_name": {"type": "VARCHAR(50)", "description": "create_procurement_vc / create_cash_flow等"},
+        "ref_type": {"type": "VARCHAR(50)", "description": "VirtualContract / CashFlow / Logistics等"},
+        "ref_id": {"type": "INTEGER", "description": "关联记录ID(主记录)"},
+        "ref_vc_id": {"type": "INTEGER", "fk": "virtual_contracts.id", "nullable": true},
+        "snapshot_before": {"type": "JSON", "description": "回滚时的恢复依据(修改前)"},
+        "snapshot_after": {"type": "JSON", "description": "redo时的恢复依据(修改后)"},
+        "involved_ids": {"type": "JSON", "nullable": true, "description": "[vc_id, logistics_id, ...]"},
+        "status": {"type": "VARCHAR(20)", "description": "committed / rolled_back / failed"},
+        "reason": {"type": "TEXT", "nullable": true, "description": "回滚原因(仅回滚时填写)"},
+        "created_by": {"type": "VARCHAR(100)"},
+        "created_at": {"type": "DATETIME", "default": "datetime.now"},
+        "rolled_back_at": {"type": "DATETIME", "nullable": true},
+        "rolled_back_by": {"type": "VARCHAR(100)", "nullable": true}
+      },
+      "relationships": {}
+    }
+  },
+
+  "enums": {
+    "vc_type": ["设备采购", "物料供应", "物料采购", "库存采购", "库存拨付", "退货"],
+    "vc_status": ["执行", "完成", "终止"],
+    "vc_subject_status": ["执行", "发货", "在途", "签收", "完成"],
+    "vc_cash_status": ["执行", "预付", "完成"],
+    "cf_type": ["预付", "履约", "罚金", "押金", "退还押金", "退款", "冲抵入金", "冲抵支付"],
+    "logistics_status": ["待发货", "在途", "签收", "完成", "终止"],
+    "express_status": ["待发货", "在途", "签收"],
+    "equipment_status": ["库存", "投放", "投入运行", "退库", "处置"],
+    "business_status": ["前期接洽", "业务评估", "客户反馈", "合作落地", "业务开展", "业务暂缓", "业务终止"],
+    "contract_status": ["签约完成", "生效", "过期", "终止"],
+    "time_rule_status": ["失效", "生效", "有结果", "结束"],
+    "time_rule_warning": ["绿色", "黄色", "橙色", "红色"],
+    "time_rule_result": ["合规", "违规"],
+    "addon_type": ["PRICE_ADJUST", "NEW_SKU", "PAYMENT_TERMS"],
+    "addon_status": ["生效", "失效", "过期"],
+    "supplier_category": ["设备", "物料", "兼备"],
+    "point_type": ["运营点位", "客户仓", "自有仓", "供应商仓"],
+    "bank_account_owner_type": ["Customer", "Supplier", "Ourselves", "Partner"],
+    "finance_account_category": ["资产", "负债", "权益", "损益"],
+    "finance_direction": ["Debit", "Credit"],
+    "partner_relation_owner_type": ["business", "supply_chain", "ourselves"],
+    "cash_flow_ledger_main_category": ["经营性", "投资性", "融资性"],
+    "cash_flow_ledger_direction": ["流入", "流出"]
+  },
+
+  "json_path_guide": {
+    "virtual_contracts.elements": {
+      "description": "VC的核心交易要素，JSON结构",
+      "structure": {
+        "elements": "Array<{id, shipping_point_id, receiving_point_id, sku_id, qty, price, deposit, subtotal, sn_list}>",
+        "total_amount": "合同总金额",
+        "payment_terms": "{prepayment_ratio, balance_period, day_rule, start_trigger}"
+      },
+      "examples": {
+        "item_sku_id": "elements->>'$.elements[0].sku_id'",
+        "item_qty": "elements->>'$.elements[0].qty'",
+        "item_price": "elements->>'$.elements[0].price'",
+        "total_amount": "elements->>'$.total_amount'"
+      }
+    },
+    "virtual_contracts.deposit_info": {
+      "description": "押金信息",
+      "structure": {
+        "should_receive": "应收押金",
+        "total_deposit": "实收押金",
+        "last_cf_id": "最后流水ID",
+        "adjustment_reason": "调整原因"
+      }
+    },
+    "business.details": {
+      "description": "业务详情，JSON结构",
+      "structure": {
+        "history": "Array<{from, to, time, comment}>",
+        "pricing": "{sku_id: {price, deposit}}",
+        "payment_terms": "{prepayment_ratio, balance_period, day_rule, start_trigger}",
+        "contract_id": "合同ID"
+      }
+    },
+    "supply_chains.payment_terms": {
+      "structure": {
+        "prepayment_ratio": "预付比例(0-1)",
+        "balance_period": "账期天数",
+        "day_rule": "自然日/工作日",
+        "start_trigger": "入库日/签收日"
+      }
+    },
+    "logistics.express_orders.items": {
+      "description": "快递单物品明细",
+      "structure": "Array<{sku_id, sku_name, qty}>"
+    },
+    "logistics.express_orders.address_info": {
+      "structure": {
+        "from_point": "发货点位",
+        "to_point": "收货点位",
+        "from_address": "发货地址",
+        "to_address": "收货地址"
+      }
+    },
+    "cash_flows.payment_info": {
+      "description": "外部参考信息",
+      "structure": "第三方支付流水号等"
+    }
+  }
+}

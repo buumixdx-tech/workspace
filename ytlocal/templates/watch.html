@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
+<title>{{ v.title }} — YTLocal</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="/"><span class="logo">🎬</span>YTLocal</a>
+    <nav class="nav">
+      <a href="/">浏览</a>
+      <a href="/download">下载</a>
+      <a href="/history">历史</a>
+    </nav>
+    <button class="search-btn" onclick="history.back()" aria-label="返回">←</button>
+  </div>
+</header>
+
+<div class="player-wrap">
+  <video id="player" controls playsinline preload="metadata"
+         {% if v.has_zh_sub or v.has_en_sub %}crossorigin="anonymous"{% endif %}>
+    <source src="/api/stream/{{ v.id }}{% if v.last_position_sec and v.last_position_sec > 30 %}?t={{ v.last_position_sec }}{% endif %}" type="video/mp4">
+    {% set base = v.file_path.rsplit('.', 1)[0] if v.file_path else '' %}
+    {% if v.has_zh_sub %}
+    <track kind="subtitles" srclang="zh" label="中文" default src="/media/{{ base }}.zh.vtt">
+    {% endif %}
+    {% if v.has_en_sub %}
+    <track kind="subtitles" srclang="en" label="English" src="/media/{{ base }}.en.vtt">
+    {% endif %}
+  </video>
+</div>
+
+<div class="container">
+  {% if v.has_zh_sub or v.has_en_sub %}
+  <div class="player-sub-controls">
+    <span style="color: var(--fg-1); font-size: 13px; padding: 6px 0;">字幕:</span>
+    <button class="active" data-mode="off" onclick="setSubs('off')">关</button>
+    {% if v.has_zh_sub %}<button data-mode="zh" onclick="setSubs('zh')">中文</button>{% endif %}
+    {% if v.has_en_sub %}<button data-mode="en" onclick="setSubs('en')">English</button>{% endif %}
+  </div>
+  {% endif %}
+
+  <div class="video-info">
+    <h1>{{ v.title }}</h1>
+    <div class="meta">
+      {{ v.channel or v.source }}
+      {% if v.duration_sec %} · {{ (v.duration_sec // 60) }}:{{ '%02d' % (v.duration_sec % 60) }}{% endif %}
+      · {{ v.source }}
+      · 加入 {{ v.created_at | humantime }}
+      {% if v.view_count %} · 已看 {{ v.view_count }} 次{% endif %}
+      {% if v.size_bytes %} · {{ v.size_bytes | humanbytes }}{% endif %}
+    </div>
+  </div>
+
+  <div class="video-actions">
+    <button onclick="downloadFile()">📥 下载源文件</button>
+    <button onclick="window.open('{{ v.url }}', '_blank')">📄 源站</button>
+    <button class="danger" onclick="delVideo({{ v.id }})">🗑 删除</button>
+  </div>
+
+  {% if related %}
+  <section class="section">
+    <div class="section-head"><div class="section-title">来自同一来源</div></div>
+    <div class="row">
+      {% for r in related %}
+      <a class="card" href="/w/{{ r.id }}">
+        <div class="card-thumb">
+          {% if r.thumb_path %}
+          <img src="{{ url_for('serve_thumb', relpath=r.thumb_path.split('/')[-1]) }}" loading="lazy">
+          {% else %}
+          <div class="thumb-fallback">🎬</div>
+          {% endif %}
+          {% if r.duration_sec %}
+          <span class="badge">{{ (r.duration_sec // 60) }}:{{ '%02d' % (r.duration_sec % 60) }}</span>
+          {% endif %}
+        </div>
+        <div class="card-info">
+          <div class="card-title">{{ r.title }}</div>
+          <div class="card-meta">{{ r.channel or r.source }}</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const video = document.getElementById('player');
+  const vidId = {{ v.id }};
+  let resumeAt = {{ (v.last_position_sec if v.last_position_sec and v.last_position_sec > 30 else 0) }};
+  let posTimer = null;
+
+  // 自动续播 (URL 上 ?t= 的优先级更高)
+  const urlT = new URL(location.href).searchParams.get('t');
+  if (urlT) resumeAt = parseFloat(urlT);
+
+  video.addEventListener('loadedmetadata', () => {
+    if (resumeAt > 5 && resumeAt < video.duration - 5) {
+      video.currentTime = resumeAt;
+    }
+  });
+
+  // 每 5s 上报进度
+  posTimer = setInterval(() => {
+    if (!video.paused && video.currentTime > 0) {
+      fetch('/api/position/' + vidId, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({t: Math.floor(video.currentTime)})
+      }).catch(() => {});
+    }
+  }, 5000);
+
+  // 页面关闭前再报一次
+  window.addEventListener('beforeunload', () => {
+    if (video.currentTime > 0) {
+      navigator.sendBeacon('/api/position/' + vidId,
+        new Blob([JSON.stringify({t: Math.floor(video.currentTime)})],
+                 {type: 'application/json'}));
+    }
+  });
+
+  // 字幕切换
+  function setSubs(mode){
+    const tracks = video.textTracks;
+    for (let i = 0; i < tracks.length; i++) {
+      tracks[i].mode = (mode !== 'off' && tracks[i].language === mode) ? 'showing' : 'hidden';
+    }
+    document.querySelectorAll('.player-sub-controls button').forEach(b => {
+      b.classList.toggle('active', b.dataset.mode === mode);
+    });
+  }
+
+  function downloadFile(){
+    const a = document.createElement('a');
+    a.href = '/api/stream/' + vidId;
+    a.download = '';
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+
+  async function delVideo(id){
+    if (!confirm('删除这个视频? 文件+字幕+缩略图都会删除')) return;
+    await fetch('/api/videos/' + id, {method: 'DELETE'});
+    location.href = '/';
+  }
+
+  function toast(msg, type){
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'toast show ' + (type || '');
+    clearTimeout(window.__tt);
+    window.__tt = setTimeout(() => el.className = 'toast', 2200);
+  }
+  window.toast = toast;
+</script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>eltdx_test · 通达信实时行情</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <!-- ECharts CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+</head>
+<body>
+  <!-- 顶部控制条 -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">📈</span>
+      <span class="title">eltdx_test</span>
+      <span class="subtitle">通达信实时行情验证</span>
+    </div>
+    <div class="controls">
+      <div class="search-wrap">
+        <input type="text" id="code-input"
+               placeholder="代码 / 名称 / 拼音 (如 000001 / 平安 / pay)"
+               maxlength="20" autocomplete="off">
+        <div id="suggestions" class="suggestions hidden"></div>
+      </div>
+      <button id="btn-toggle" class="btn btn-primary">暂停</button>
+      <span class="status" id="status">就绪</span>
+    </div>
+  </header>
+
+  <!-- 错误条 -->
+  <div id="error-bar" class="error-bar hidden"></div>
+
+  <script>
+    window.APP_DEFAULT_CODE = "{{ default_code }}";
+    window.APP_REFRESH_SECONDS = {{ refresh_seconds }};
+  </script>
+
+  <!-- 主体两栏 -->
+  <main class="main">
+    <!-- 左：分时 + K线 + 成交量 -->
+    <div class="left-column">
+      <section class="chart-panel">
+        <div class="panel-header">
+          <div class="mode-tabs">
+            <button class="tab active" data-mode="minute">分时</button>
+            <button class="tab" data-mode="kline">K线</button>
+          </div>
+          <div class="kline-controls hidden" id="kline-controls">
+            <select id="period-select">
+              <option value="day" selected>日K</option>
+              <option value="week">周K</option>
+              <option value="month">月K</option>
+              <option value="60min">60分</option>
+              <option value="30min">30分</option>
+              <option value="15min">15分</option>
+              <option value="5min">5分</option>
+            </select>
+            <select id="adjust-select">
+              <option value="qfq" selected>前复权</option>
+              <option value="hfq">后复权</option>
+              <option value="none">不复权</option>
+            </select>
+          </div>
+          <span class="meta" id="minute-meta">--</span>
+        </div>
+        <div id="chart" class="chart"></div>
+      </section>
+
+      <section class="volume-panel">
+        <div class="panel-header">
+          <h3 id="volume-title">成交量</h3>
+          <span class="meta" id="volume-meta">--</span>
+        </div>
+        <div id="volume-chart" class="volume-chart"></div>
+      </section>
+    </div>
+
+    <!-- 右：报价 + 盘口 -->
+    <aside class="quote-panel">
+      <!-- 报价卡 -->
+      <div class="card quote-card">
+        <div class="panel-header">
+          <h3 id="quote-name">--</h3>
+          <span class="meta" id="quote-code">--</span>
+        </div>
+        <div class="price-row">
+          <span class="last-price" id="last-price">--</span>
+          <span class="change" id="change">--</span>
+        </div>
+        <div class="change-row">
+          <span class="change-pct" id="change-pct">--</span>
+          <span class="quote-time" id="quote-time">--</span>
+        </div>
+        <table class="quote-table">
+          <tr><th>今开</th><td id="open-price">--</td><th>昨收</th><td id="pre-close">--</td></tr>
+          <tr><th>最高</th><td id="high-price">--</td><th>最低</th><td id="low-price">--</td></tr>
+          <tr><th>成交量(手)</th><td id="volume-hand">--</td><th>现手</th><td id="current-hand">--</td></tr>
+          <tr><th>成交额(元)</th><td id="amount">--</td><th>内外盘</th><td id="inout">--</td></tr>
+        </table>
+      </div>
+
+      <!-- 五档盘口 -->
+      <div class="card depth-card">
+        <div class="panel-header">
+          <h3>五档盘口</h3>
+          <span class="meta" id="depth-meta">--</span>
+        </div>
+        <table class="depth-table">
+          <thead>
+            <tr><th colspan="3" class="sell-header">卖盘</th></tr>
+            <tr><th>档位</th><th>价格</th><th>手数</th></tr>
+          </thead>
+          <tbody id="sell-rows"></tbody>
+          <thead>
+            <tr><th colspan="3" class="buy-header">买盘</th></tr>
+          </thead>
+          <tbody id="buy-rows"></tbody>
+        </table>
+      </div>
+    </aside>
+  </main>
+
+  <!-- 字段详情卡（展示 eltdx 提取的所有行情字段，验证字段提取能力）-->
+  <section class="card fields-card">
+    <div class="panel-header">
+      <h3>实时行情字段提取（eltdx QuoteSnapshot）</h3>
+      <span class="meta">
+        所有人类可读字段，去除了 raw 二进制
+        · <span id="stocks-meta">代码表加载中...</span>
+      </span>
+    </div>
+    <div id="fields-grid" class="fields-grid">等待数据...</div>
+  </section>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

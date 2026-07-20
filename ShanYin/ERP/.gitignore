@@ -1,0 +1,52 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.py.tmp.*
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Local data (runtime generated)
+desktop-version/data/*.db
+desktop-version/data/*-shm
+desktop-version/data/*-wal
+desktop-version/data/database.json
+desktop-version/data/finance/finance-voucher/*.json
+desktop-version/data/finance/finance-report/*.json
+
+# Claude memory / plans
+.claude/
+
+# Android / Kotlin build
+.kotlin/
+build/
+app/build/
+**/app/release/
+**/app/release/baselineProfiles/
+*.apk
+*.aab
+*.dm
+local.properties
+
+# Gradle
+.gradle/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local scripts
+scripts/

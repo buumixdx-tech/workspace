@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>高毛利率上市公司</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :root {
+    --bg: #0f1117;
+    --bg-card: #1a1d29;
+    --text: #e8eaed;
+    --text-dim: #9aa0a6;
+    --border: rgba(255,255,255,0.08);
+    --accent: #5e72e4;
+    --shadow: 0 10px 30px rgba(0,0,0,0.4);
+  }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    min-height: 100vh;
+  }
+  body {
+    background:
+      radial-gradient(circle at 15% 10%, rgba(94, 114, 228, 0.08), transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(239, 71, 111, 0.06), transparent 40%),
+      var(--bg);
+  }
+  .container { max-width: 1400px; margin: 0 auto; padding: 32px 24px; }
+
+  .hero {
+    text-align: center;
+    padding: 32px 0 24px;
+    animation: fadeUp .8s ease;
+  }
+  .hero h1 {
+    font-size: 36px;
+    margin: 0;
+    background: linear-gradient(135deg, #5e72e4 0%, #ff6b6b 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.5px;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .stock-list {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    max-height: calc(100vh - 180px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
+    position: sticky;
+    top: 24px;
+  }
+  .stock-search {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    margin-bottom: 10px;
+    transition: border-color .2s;
+  }
+  .stock-search:focus { border-color: var(--accent); }
+  .stock-search::placeholder { color: var(--text-dim); }
+  .sort-tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+  .sort-tab {
+    flex: 1;
+    padding: 6px 8px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-dim);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all .2s;
+    font-family: inherit;
+  }
+  .sort-tab:hover { border-color: var(--accent); color: var(--text); }
+  .sort-tab.active { background: var(--accent); border-color: var(--accent); color: white; }
+  .stock-items { display: flex; flex-direction: column; gap: 2px; }
+  .stock-item {
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background .15s ease;
+    border-left: 3px solid transparent;
+  }
+  .stock-item:hover { background: rgba(255,255,255,0.04); }
+  .stock-item.active {
+    background: rgba(94,114,228,0.15);
+    border-left-color: var(--accent);
+  }
+  .stock-item-name { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .stock-item.active .stock-item-name { color: #a8b4fc; }
+  .stock-item-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .stock-item-code { font-size: 11px; color: var(--text-dim); font-family: ui-monospace, monospace; }
+  .stock-item-mc { font-size: 11px; color: var(--text-dim); font-weight: 600; }
+  .stock-item-gm-row { margin-top: 4px; }
+  .stock-item-gm { font-size: 12px; color: var(--text); font-weight: 700; }
+  .stock-empty { text-align: center; padding: 24px; color: var(--text-dim); font-size: 13px; }
+
+  .detail-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    min-height: 400px;
+    animation: fadeUp .5s ease;
+  }
+  .detail-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    color: var(--text-dim);
+    text-align: center;
+  }
+  .detail-empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.3; }
+  .detail-empty-text { font-size: 14px; }
+  .detail-header {
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .detail-title { font-size: 22px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+  .detail-code { font-size: 12px; color: var(--text-dim); font-family: ui-monospace, monospace; }
+  .detail-mc-row { display: flex; gap: 16px; align-items: center; margin-bottom: 20px; font-size: 14px; }
+  .detail-mc-value { color: var(--text-dim); font-weight: 600; }
+  .detail-gm-value { color: var(--text); font-weight: 700; }
+
+  .back-intro {
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text);
+  }
+  .back-intro h1, .back-intro h2, .back-intro h3 {
+    color: var(--text);
+    margin: 18px 0 8px;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.5;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 5px;
+  }
+  .back-intro h1:first-child, .back-intro h2:first-child, .back-intro h3:first-child { margin-top: 0; }
+  .back-intro h2 { font-size: 14px; }
+  .back-intro h3 { font-size: 13px; color: var(--text-dim); font-weight: 600; }
+  .back-intro p { margin: 0 0 12px; font-size: 14px; line-height: 1.85; color: var(--text); }
+  .back-intro ul, .back-intro ol { margin: 0 0 12px; padding-left: 22px; font-size: 14px; line-height: 1.85; }
+  .back-intro li { margin-bottom: 5px; }
+  .back-intro li::marker { color: var(--text-dim); }
+  .back-intro strong { color: var(--text); font-weight: 700; }
+  .back-intro em { color: var(--text-dim); font-style: italic; }
+  .back-intro code {
+    background: rgba(255,255,255,0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: ui-monospace, monospace;
+    font-size: 13px;
+    color: #a8c7fa;
+  }
+  .back-intro pre {
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 13px;
+    overflow-x: auto;
+    margin: 12px 0;
+  }
+  .back-intro blockquote {
+    margin: 12px 0;
+    padding: 10px 16px;
+    background: rgba(255,255,255,0.04);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.75;
+  }
+  .back-intro hr { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+  .back-intro .ref-block { margin-top: 20px; padding-top: 14px; border-top: 1px dashed var(--border); font-size: 13px; }
+  .back-intro .ref-title { font-weight: 700; color: var(--text-dim); margin-bottom: 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .back-intro .ref-item { color: var(--text-dim); margin-bottom: 5px; padding-left: 10px; line-height: 1.6; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .stock-list { position: static; max-height: 50vh; }
+    .hero h1 { font-size: 28px; }
+  }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header class="hero">
+    <h1>高毛利率上市公司</h1>
+  </header>
+
+  <div class="layout">
+    <div class="stock-list">
+      <input type="text" class="stock-search" placeholder="搜索公司或代码..." />
+      <div class="sort-tabs">
+        <button class="sort-tab active" data-sort="gm">按毛利率</button>
+        <button class="sort-tab" data-sort="mc">按市值</button>
+      </div>
+      <div class="stock-items">
+        <div class="stock-item" data-name="铖昌科技" data-code="sz.001270" data-mc="287.38600646" data-gm26="0.8217" data-intro="根据知识库中明确指向铖昌科技（该公司曾用股票简称ST铖昌，目前摘帽在即）的信息，以下介绍其业务情况与投资价值。  **业务定位与市场地位**   铖昌科技是一家专注于微波毫米波芯片领域的A股上市公司，核心业务涵盖卫星载荷及相关组件，被市场视为卫星天线环节的核心标的之一。公司深度参与商业航天产业链，是星网二代系统的核心供应商，与臻镭科技并称“卫星载荷双雄”。此外，铖昌科技也被归类为低轨卫星概念股，并为千帆星座提供射频器件，在航天器端被多家研究机构列为重点关注方向。  **产业链关系**   在业务合作方面，铖昌科技与立昂微存在紧密的代工与客户关系：立昂微的pHEMT芯片通过铖昌科技实现大规模出货，同时立昂微也为铖昌科技提供核心代工服务。公司还被纳入HW和大唐链（卫星部分）的产业链，进一步巩固其在卫星通信领域的地位。  **经营状况与预期**   铖昌科技此前因经营困境被实施特别处理（股票简称一度为ST铖昌），但公司已实现扭亏为盈，摘帽在即，机构配置限制即将解除，有望获得更多机构投资者的关注。作为星载射频行业的重要企业，公司正凭借在卫星载荷和低轨卫星领域的核心技术优势逐步走出低谷，被视为卫星方向的重要投资对象。  **相关催化**   商业航天板块近期催化密集（如多款可回收火箭发射、SpaceX IPO推进等），铖昌科技作为卫星载荷及天线环节的核心标的，受益于行业景气度提升。同时，公司被列为商业航天卫星环节的推荐关注对象，随着国内星座组网加速和海外商业航天发展，其订单及业绩增长预期较强。  ### References  - [9] 60 - [11] 7985 - [13] 11672 - [15] 11587 - [17] 18336">
+        <div class="stock-item-name">铖昌科技</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sz.001270</span>
+          <span class="stock-item-mc">287.4亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">82.2%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="华峰测控" data-code="sh.688200" data-mc="940.89771435" data-gm26="0.753" data-intro="华峰测控（股票代码 sh.688200）是一家专注于半导体测试设备的上市公司，业务覆盖模拟测试机、功率测试机、SoC测试机以及系统级测试（SLT）四大板块。公司被市场视为本土算力测试机的核心标的，近年来在高端数字测试机领域取得关键突破，通过推出8600系列产品向SoC及算力芯片测试市场拓展，有望打破海外厂商泰瑞达和爱德万的垄断格局，打开4倍以上的可服务市场空间。  ---  ### 业务发展与核心产品  华峰测控在模拟测试机领域已占据国内50%以上份额，是绝对的行业龙头。受益于AI算力及光模块带动的下游需求旺盛，国内客户抢份额趋势明显，预计今年模拟测试机订单将实现翻倍增长，且明年有望继续保持增长态势。  在功率测试机方面，公司在GaN、SiC等三代半导体领域技术全球领先，海外龙头大客户正在东南亚大规模投资三代半导体器件产能，华峰测控有望成为该领域最大的受益方，同时在海外其他客户方面也有持续突破。  SoC测试机是公司未来最重要的增长极。公司推出的8600系列算力测试机正在与下游客户进行验证，并已成功获得北京大客户的批量订单。该产品旨在与泰瑞达、爱德万的中高端产品竞争，预计2027年将在算力领域取得较大量订单，正式开始规模化放量。  系统级测试（SLT）方面，公司通过收购切入这一市场，SLT设备市场空间与SoC测试机同量级，当前大陆市场主要由台湾厂商主导。公司产品将直接对标，客户可与8600形成协同，预计2027年同样有望开始放量。  ---  ### 财务与订单表现  根据2026年第一季度报告，华峰测控实现营收2.72亿元，同比增长37.52%；归母净利润0.94亿元，同比增长52.12%；毛利率高达75.3%，净利率34.44%。尽管一季度受春节影响确收节奏偏慢，但后续季度有望明显改善。公司月均订单指引已从3月的1.5–2亿元上调至2亿元档口，模拟景气度在AI驱动下呈现长周期繁荣。  行业层面，随着芯片复杂度持续提升，测试机配置提高、测试时间拉长，测试设备行业市场空间已从此前的约50亿美元快速扩张至超百亿美元，形成显著的“通胀”效应。华峰测控作为后道测试设备龙头，有望持续受益于这一趋势。  ---  ### 市场展望  市场对公司的盈利预期较为乐观，预计2026–2027年净利润分别达到7.5亿元和12亿元，对应模拟/数字/存储业务的市值空间分别达到500亿、300亿、100亿元。同时，公司8600产品的年内订单确定性高，后续客户验证及放量节奏存在超预期可能，整体成长空间值得关注。  ---  ### References  - [2] 25339 - [5] 46030 - [8] 23405 - [17] 45430 - [20] 17714">
+        <div class="stock-item-name">华峰测控</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sh.688200</span>
+          <span class="stock-item-mc">940.9亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">75.3%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="柏楚电子" data-code="sh.688188" data-mc="414.50857231" data-gm26="0.7451" data-intro="柏楚电子是一家在激光设备领域具有核心竞争力的公司，主营激光切割控制系统，并正向精密业务和AI相关应用领域拓展。其当前情况和价值主要体现在以下几个方面：### 公司核心情况  1.  **主营业务与产品线**：柏楚电子的核心业务是激光切割系统，并已成功拓展至激光智能焊接系统、PCB切割系统以及液冷板切割系统。此外，其子公司正在研发用于3D打印的振镜系统（包括振镜卡和振镜头）[1][3]。 2.  **订单与业绩改善**：公司订单已明确改善。2026年4月订单同比增长约30%，5月增速有望更快，主要驱动力来自下游PCB切割、泛AI、船舶和工程机械等领域的需求回暖 [1][3]。 3.  **新产品进展显著**：     *   **激光智能焊接系统**：2026年预计销售将翻倍，达到约2800套，并有望在2027和2028年继续保持翻倍增长态势 [1][3]。     *   **PCB/AI激光切割系统**：相关业务已从“0-1”的导入阶段进入“1-10”的规模化放量阶段，特别是PCB切割系统已获得头部客户认可，为市值打开了新的空间 [1][3]。     *   **液冷板切割系统**：该系统终端客户用于液冷柜的板材加工，目前已获得部分客户认可。随着AI基建浪潮推动液冷柜需求增长，该系统有望受益于行业贝塔（β）红利，获得更多销售机会 [1][3]。  ### 公司价值分析  1.  **市场观点与估值**：以国海机械为代表的机构持续看好柏楚电子，认为其当前股价处于底部，存在至少70%以上的上涨空间，预期差较大 [1][3]。 2.  **业绩预期**：根据市场预测，柏楚电子预计2026年和2027年的净利润将分别达到 **15亿元** 和 **19亿元**。按此业绩计算，对应市盈率（PE）分别为33倍和25倍，显示出其良好的成长性和估值吸引力 [1][3]。 3.  **核心增长驱动**：公司的价值增长主要来自三个方面：一是传统订单的改善，二是激光焊接系统的高增长，三是PCB及AI相关激光切割系统打开的全新市场空间。这些新业务被视为公司从“0-1”跨越到“1-10”阶段的关键，也是市值增长的主要动力 [1][3]。  此外，柏楚电子在AI领域的敞口较高，被广发机械推荐为泛AI相关的投资标的 [Knowledge Graph Data]。综合来看，柏楚电子正凭借其在激光控制领域的技术积累，在AI浪潮下通过多业务线实现价值重估。  ### References  *   [1] 45521 *   [3] 45456">
+        <div class="stock-item-name">柏楚电子</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sh.688188</span>
+          <span class="stock-item-mc">414.5亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">74.5%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="融捷股份" data-code="sz.002192" data-mc="214.7608184" data-gm26="0.7435" data-intro="### 融捷股份（sz.002192）情况与价值分析  融捷股份是一家中国锂矿行业的上市公司，主营业务聚焦于锂资源开发与加工。公司拥有国内矿产资源，是国内锂资源自给率较高的企业之一，同时被市场认为估值相对较低。在锂矿板块中，融捷股份被国金金属列为推荐标的，并被视为弹性标的，表明其在行业中的投资吸引力。  #### 产能与产量提升 融捷股份获得了委外加工许可，产能得以大幅提升。根据年报披露，公司锂精矿产量超出预期，达到18万吨。在获得委外加工许可后，产能可由原有的45万吨/年提升至105万吨/年，对应约2.5万吨碳酸锂当量，且生产成本较低，约为2000元/吨。这一产能扩张进一步巩固了其在国内锂矿资源端的优势地位。  #### 业绩表现 在业绩方面，融捷股份2026年第一季度（26Q1）实现了同比超过十倍的增长，展现出强劲的盈利爆发力。这一增长与锂电行业整体供需关系改善、需求爆发以及锂价上行趋势密切相关。  #### 市场观点与催化因素 多家卖方机构将融捷股份列为国内矿产标的中的重点关注对象。国金金属在报告中明确指出，锂矿板块的压制因素正在消除，包括ND复产受阻、津巴布韦出口不确定性以及低库存下二季度持续去库等边际变化，均有利于国内资源方，而融捷股份等国内矿产标的受到偏爱。开源电新也将融捷股份归入国内矿推荐组合。此外，中东局势引发的澳洲柴油供应危机进一步强化了全球锂矿供给收缩的预期，锂价上行确定性增强，融捷股份作为国内资源自给率高的企业，受益逻辑清晰。  综上所述，融捷股份凭借其国内矿产资源优势、超预期的产能释放、低成本产能以及强劲的业绩增长，在锂矿板块中具备较高的弹性与投资价值。  ### 参考文献  - [1] 8517 - [3] 8514 - [5] 10912 - [7] 11048 - [8] 24769">
+        <div class="stock-item-name">融捷股份</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sz.002192</span>
+          <span class="stock-item-mc">214.8亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">74.4%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="成都华微" data-code="sh.688709" data-mc="229.26492936" data-gm26="0.7194" data-intro="成都华微电子科技股份有限公司（股票代码 sh.688709）是一家中国微电子领域的上市公司，在行业中被定位为军工企业。该公司与卫星互联网和商业航天产业紧密相关，被多个来源列为卫星互联网受益标的、商业航天受益标的以及卫星产业链建议关注标的。此外，成都华微还获得华西军工等机构的推荐，被视为内需推荐标的。总体而言，该公司在商业航天和卫星互联网方向上具有显著的投资关注价值。  ### References">
+        <div class="stock-item-name">成都华微</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sh.688709</span>
+          <span class="stock-item-mc">229.3亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">71.9%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="多浦乐" data-code="sz.301528" data-mc="55.6481" data-gm26="0.716" data-intro="多浦乐（股票代码：301528）是一家专注于工业超声检测领域的高端设备制造商，其核心业务围绕超声探头和超声设备展开，并聚焦于技术壁垒较高的高端工业相控阵细分赛道。公司在国内工业相控阵市场占据约30%的份额，整体业务展现出强劲的盈利能力，毛利率达70%，净利率为30% [2][5]。其下游应用场景广泛，覆盖液冷、轨交、航空、核电等多个关键工业领域，体现了较强的业务延展性 [5]。  在具体产品方面，多浦乐是国内唯一实现**靶材专用自动化检测系统**量产的企业。公司自主研发了靶材超声相控阵C扫系统，攻克了微米级缺陷识别、自动化扫描路径规划等核心技术，检测精度达到±0.5μm级，速度较进口设备提升40%，成本降低60%。凭借技术优势，公司成功进入中芯国际（28nm以下制程靶材供应商准入强制条款指定检测设备）及江丰电子、有研新材、阿石创等头部厂商的供应链，并形成了“靶材生产-检测-晶圆验证”的全链条协同生态。目前，多浦乐在国内靶材检测设备市场占有率已达42%，并建成年产能500套的生产线，2025年该业务收入同比增长87% [2]。  除了靶材检测设备这一核心增长极，多浦乐还在积极拓展新的检测应用场景。在**MLCC（多层陶瓷电容）检测**领域，超声检测是面积型缺陷检测的理想方案。若高端MLCC全面采用超声全检，潜在市场空间或达百亿元级别，公司产品目前正处于客户测试阶段 [5]。同时，公司利用多年积累的**X光CT技术**，布局算力PCB检测市场。其走冷阴极技术路线以与同行形成差异化，产品已于2025年底获得相关资质并处于送样阶段。分析认为，X光检测业务中期有望“再造一个多浦乐” [5]。  从市场定位和估值角度看，多浦乐被部分市场观点类比为“超声小奕瑞”或“下一个埃科光电”，显示出对其技术平台可迁移性和增长潜力的认可。基于当前业务布局和成长逻辑，市场对其先看翻倍空间 [5]。  ### References  * [2] 42137 * [5] 37465">
+        <div class="stock-item-name">多浦乐</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sz.301528</span>
+          <span class="stock-item-mc">55.6亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">71.6%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="西藏珠峰" data-code="sh.600338" data-mc="135.66878893" data-gm26="0.7106" data-intro="西藏珠峰（股票代码 sh.600338）是一家以锂矿业务为核心业务的上市公司，被市场视为具备高弹性的投资标的。公司在锂矿相关上市公司中投资弹性突出，近期业务层面出现边际变化，受到多家券商的密切关注，例如国金金属将其列为锂矿板块的推荐标的，招商电新也给予重点关注，天风金属明确推荐其为弹性标的之一【17】【19】。从产业链定位看，西藏珠峰与锂电板块紧密相关，是上游碳酸锂领域的重要参与方。综合来看，西藏珠峰在锂行业供需格局改善、价格上涨的背景下，凭借其锂矿资源禀赋和边际改善的业务进展，成为投资者在新能源材料领域的重要参考对象。  ### References  - [17] 天风金属 - [19] GFDX">
+        <div class="stock-item-name">西藏珠峰</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sh.600338</span>
+          <span class="stock-item-mc">135.7亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">71.1%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="莱特光电" data-code="sh.688150" data-mc="257.60029816" data-gm26="0.6974" data-intro="莱特光电（股票代码 sh.688150）是一家以OLED终端材料为核心主业，并积极布局Q布（高端电子布）新业务的平台型电子材料企业。公司凭借在OLED材料领域的国产替代龙头地位及产业链协同优势，形成了“OLED+Q布”双轮驱动的发展格局，业绩增长确定性强，第二增长曲线有望加速落地。  ### OLED主业：国产替代龙头，业绩高增确定  莱特光电是国内OLED终端材料的领军企业，其Red Prime等高端材料已实现进口替代，深度绑定京东方等头部面板厂。2026年，Red Host、Green Prime等产品进入规模化放量阶段，主业高增可持续 [1][3]。公司受益于京东方8.6代AMOLED生产线量产及苹果折叠屏等催化因素，主业预期迎来反转 [9]。财务数据显示，公司2025年实现营收5.52亿元（同比+17.05%），归母净利润2.19亿元（同比+30.98%），毛利率达73%，净利率39.7% [3]。预计其IPO产能将于2028年实现满产，届时可贡献20亿元收入和7-8亿元利润 [5]。  ### Q布新业务：卡位AI算力，打开第二增长曲线  莱特光电布局Q布（电子布的一种）业务，专注于AI服务器所需的高端电子布。该业务由实控人整合海外高纯度石英矿资源（通过体外公司特莱晶）及PCB客户资源（通过重庆宇隆）协同推进，并拥有成熟研发团队 [3][5]。目前，Q布样品已送至台光进行验证，等待反馈 [7]；核心生产设备已下单并有序交付，预计2026年第三季度设备到位后将具备30万米/月产能，年底有望达到200+台织布机，对应明年1200万米产能 [3][9]。Q布一期项目投资5亿元，规划100万米/月产能，预计2028年在50%销量下盈利约5亿元 [5]。该业务被视为公司的第二增长曲线，适配AI算力高景气需求。  ### 资源与团队优势  公司在上游拥有海外印度高纯度石英矿，提纯能力和良率提升方面具备先天优势 [3]。同时，莱特光电与日本团队合作增强自主研发实力，并依托实控人在高纯石英砂、PCBA领域的成熟布局，保障了原料稳定与下游渠道协同 [1]。此外，公司体内外产业还涵盖显示器件、半导体材料、光伏材料等多个领域，具备平台型集团的发展潜力 [5]。  ### 机构关注与估值展望  莱特光电受到东北通信、天风化工、国金建材/新材料李阳团队等多家机构重点关注 [1][3][5]。市场认为，其OLED主业提供估值底仓（3年翻倍增长），Q布新业务有望贡献额外市值弹性，整体从单一材料商向平台型电子材料企业迈进。在电子布行业面临20年来最紧缺格局的背景下，莱特光电作为高端电子布新进入者，有望充分受益于涨价周期和AI算力需求爆发 [16][18]。  ### References  - [1] 21738 - [3] 34805 - [5] 33302 - [7] 49004 - [9] 46226">
+        <div class="stock-item-name">莱特光电</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sh.688150</span>
+          <span class="stock-item-mc">257.6亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">69.7%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="达利凯普" data-code="sz.301566" data-mc="149.523738" data-gm26="0.6762" data-intro="达利凯普（股票代码：301566.SZ）是全球第五、国内第一的射频微波 **MLCC（多层陶瓷电容器）** 龙头，专注于高 Q 值、低 ESR、高稳定性的射频微波 MLCC 产品，也是国内唯一具备批量外销射频 MLCC 能力的企业，全球市占率约 **5.7%–7.6%** [20]。  **核心价值与增长驱动**  *   **车规级产品迎来黄金期**：达利凯普的车规级射频 MLCC 聚焦汽车毫米波雷达、ADAS、车联网等高频场景。其车规产品预计在 **2026 年 Q2 通过 AEC-Q200 认证**，并实现批量供货，届时将迎来业绩爆发期 [20]。 *   **涨价空间显著**：受益于 MLCC 价格全面上行周期，公司车规级射频 MLCC 的涨价空间预计达 **30%–50%**，远超行业平均水平，核心逻辑在于射频车规 MLCC 的高壁垒、供需失衡、成本传导与国产替代加速的四重共振 [20]。 *   **国产替代与客户突破**：达利凯普已进入比亚迪、蔚来、理想等多家头部车企的供应链验证阶段。在日系厂商优先保障高毛利 AI 订单、压缩车规射频 MLCC 产能的背景下，国产替代窗口打开，公司有望加速渗透 [20]。  **市场地位与行业机遇**   作为射频微波 MLCC 细分赛道的隐形冠军，达利凯普在国内具备唯一批量外销能力，并持续受益于 MLCC 国产替代大趋势。随着车规级认证落地和下游需求放量，公司的成长逻辑清晰，是当前 MLCC 全面上行周期中值得关注的核心标的 [20]。  ### References  *   [20] 23636">
+        <div class="stock-item-name">达利凯普</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sz.301566</span>
+          <span class="stock-item-mc">149.5亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">67.6%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="骄成超声" data-code="sh.688392" data-mc="233.76981386" data-gm26="0.6677" data-intro="根据提供的上下文信息，骄成超声（股票代码 sh.688392）是一家在超声波焊接及检测设备领域具备龙头地位的中国公司，业务横跨锂电和半导体两大核心赛道，被多家投资机构列为重点关注标的。  ### 公司业务与核心优势  骄成超声的主营业务聚焦于超声波焊接与检测设备。在**锂电领域**，公司是宁德时代的核心供应商，其产品包括用于复合铜箔制造的超声滚焊设备。在**半导体领域**，公司主营超声波焊接与清洗设备，应用于半导体封装及后道检测环节，属于长鑫长存产业链的后道设备。特别是在先进封装方面，骄成超声专注于后道先进封装超扫（超声波扫描）设备，是先进封装产能扩张的核心受益者之一。  ### 市场地位与机构关注  公司被多家券商推荐。**天风机械**在复合铜箔产业趋势点评中指出，设备端将率先起量，并明确将骄成超声列为超声滚焊领域的推荐标的【20】。**华西机械**在半导体设备板块观点中，将骄成股份（与骄成超声关联）归为小市值推荐标的之一【2】【5】。此外，**国投机械**将其列为C链（宁德时代产业链）核心推荐，**天风电新**也建议关注该公司。在价值分析上，机构认为骄成超声具备轻资产、高研发费用、规模效应下净利率大幅提升的业绩拐点特征，与峰岹科技等公司具有可比的成长逻辑。同时，先进封装产能的扩张使公司成为核心受益者。  ### 业务前景与订单情况  在复合铜箔领域，随着动力电池安全新规的推进，复合铜箔产业化加速。头部供应商良率已达80%以上，成本优势开始显现，设备端（包括骄成超声的超声滚焊设备）有望率先起量【20】。在半导体后道设备领域，公司订单已进入快速成长阶段，量检测设备订单呈现高景气态势。日联科技可能通过投资或并购进入超声检测领域，也凸显了该细分市场的潜力。  ### 总结  骄成超声凭借在超声波焊接与检测领域的深厚技术积累，同时卡位锂电和半导体两个高成长赛道。随着复合铜箔量产拐点的到来、先进封装产能的扩张以及后道设备需求的提升，公司有望持续受益，成长逻辑清晰。多家机构的推荐也反映了市场对其未来价值的认可。  ### References  * [20] 天风机械｜复合铜箔：行至量产拐点，看好设备端率先起量0307 * [2] 华西机械：海外设备谷价逼近新高，持续强call中国硬科技 * [5] 华西机械：海外设备谷价逼近新高，持续强call中国硬科技">
+        <div class="stock-item-name">骄成超声</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sh.688392</span>
+          <span class="stock-item-mc">233.8亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">66.8%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="鼎阳科技" data-code="sh.688112" data-mc="111.55822122" data-gm26="0.6424" data-intro="鼎阳科技（股票代码 sh.688112）是中国国内领先的电子测量仪器供应商，专注于测试测量仪器设备的研发与制造，被市场公认为国内头部电子测量仪器企业之一 [1][8][20]。公司近年来全面发力AI领域，已为光模块、AI芯片、高速线缆等下游客户提供测试仪器，并且其测试仪器正从研发端逐步向产线端渗透 [1]。  ### 核心业务与AI布局  鼎阳科技的AI相关业务增长显著，主要体现在以下方面：  - **光通信测试**：公司的光通信源表产品单个客户需求已达1e级别，而公司目前在该产品的收入规模仅为几千万，拓展空间巨大 [1]。 - **高速线缆/连接器测试**：公司具备50GHz以下的矢网仪器能力，正在积极对接客户，该领域对标Keysight数亿美金的收入规模 [1]。 - **PCB厂家测试**：公司的测试仪器在PCB厂家研发端已有应用，产线端仍在对接中 [1]。 - **电源类产品**：公司在光通信领域的电源类产品增速高达166.16% [1]。  ### 产品技术进展  - **采样示波器**：1.6T基础产品的所有技术障碍已全面扫清，包括核心芯片的自研，头部客户正在积极对接，产品落地速度快于预期；同时公司已开始布局3.2T产品的技术 [1]。 - **技术积累**：公司多年前曾成功落地1G实时+50G采样示波器产品，在采样模块、光转化、软件和协议等方面具备可迁移的核心技术储备 [1]。  ### 财务表现  2026年第一季度，公司实现营业收入1.62亿元，同比增长22.8%；但归母净利润为0.38亿元，同比下降4.6%，主要受汇兑损益影响（财务费用同比增加约1千万元）[1]。值得注意的是，一季度订单增速快于收入增速，显示出后续增长动能 [1]。  ### 市场关注与看好逻辑  鼎阳科技被多家券商列为光模块测试板块的核心关注标的：  - **广发机械**指出，公司全面发力AI，测试仪器在AI领域正从研发走向产线，且采样示波器落地速度超预期 [1]。 - **中金机械**在光模块测试板块点评中将鼎阳科技列为国内布局公司之一，认为其受益于AI带动的光模块测试需求及国产替代趋势 [8]。 - **东方电子**强调重视国内科学仪器仪表厂的边际变化，鼎阳科技是其中代表之一 [10]。 - **天风机械**将鼎阳科技列为光设备右侧核心品种 [14]。 - **浙商机械**将鼎阳科技定位为电子测量仪器领军企业，认为其AI相关订单增长明显，布局光通信测试设备有望受益于市场高增和国产替代 [20]。  此外，公司还与同行优利德进行过深度交流，被东财机械看好其在测试仪器领域的突围潜力（来源于知识图谱关系）[1][20]。  ### 投资价值总结  鼎阳科技作为国内头部电子测量仪器供应商，正在充分把握AI和光通信技术迭代带来的结构性机遇。其1.6T相关测试产品的技术突破、核心芯片自研能力以及向产线级应用的拓展，均有望驱动未来业绩增长。当前市值对应2026年一季度的收入增速已反映部分预期，但考虑到光通信源表等新产品的巨大市场空间以及光模块测试仪器国产化率仅16%的背景，公司具备较高的成长弹性 [1][8][20]。  ---  ### References  * [1] 23213 * [8] 17745 * [10] 27341 * [14] 47059 * [20] 26382">
+        <div class="stock-item-name">鼎阳科技</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sh.688112</span>
+          <span class="stock-item-mc">111.6亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">64.2%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="长进光子" data-code="sh.688635" data-mc="394.294498" data-gm26="0.6229" data-intro="长进光子（股票代码 sh.688635）是国内第三方特种光纤领域的龙头企业，核心业务聚焦于高性能掺稀土特种光纤的研发、生产和销售。公司打破了Nufern、LIEKKI等海外巨头在特种光纤市场长期以来的技术垄断，产品广泛应用于工业激光、光通信（含CPO/NPO）、国防传感等关键领域。其核心产品包括掺铒光纤（助力400G光传输网规模化商用）、CPO保偏光纤（为共封装光学场景提供关键连接材料）、掺镱光纤（批量供应给锐科激光、创鑫激光等头部激光器厂商）以及功能增强型掺稀土光纤（用于军工科研院所）。从产能与财务数据来看，公司截至相关节点拥有约8000公里的产能，2025年实现营业收入2.47亿元，毛利率高达65.06%，显示出产品的高附加值和技术壁垒。公司已于2026年5月27日正式登陆科创板，成为特种光纤领域“第一股”，IPO发行市值约31.2亿元，上市后市场合理估值预期超过100亿元。凭借稀缺的卡位优势和AI驱动光通信升级的行业趋势，公司正通过上市募投项目规划新增空芯光纤等前沿产能，进一步巩固领先地位。  在股东与客户结构方面，长进光子获得了哈勃投资、中移基金、长江长飞、华工创投等多家产业资本的战略投资，其中杰普特持有公司12.24%的股权，既是第二大股东也是重要客户，双方在数通领域存在协同合作空间。下游客户覆盖锐科激光、创鑫激光、光迅科技、德科立、昂纳科技等光通信与激光行业头部企业，并持续向军工科研院所供货。随着AI算力网络对高带宽、低损耗光纤需求的爆发，尤其是CPO/NPO场景中保偏光纤、掺铒光纤的用量提升，公司有望深度受益于国产替代进程和全球光通信基础设施升级浪潮。整体来看，长进光子具备技术与客户双重壁垒，产能扩张叠加AI需求增量，其成长路径清晰、盈利质量突出，是特种光纤赛道中兼具稀缺性与确定性的核心标的。  ### References * [3] 11523 * [6] 32636 * [12] 32464 * [18] 32408">
+        <div class="stock-item-name">长进光子</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sh.688635</span>
+          <span class="stock-item-mc">394.3亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">62.3%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="坤恒顺维" data-code="sh.688283" data-mc="39.71898" data-gm26="0.6204" data-intro="根据提供的上下文信息，坤恒顺维（A股上市公司）被华创计算机研究团队明确列为商业航天产业链的受益标的，属于该领域的专业服务公司，其业务涉及测试仪器。在商业航天板块进入关键催化窗口期（如可回收火箭发射、SpaceX IPO预期等）的背景下，该公司作为产业链相关环节被建议关注。  ### References  * [15] 13655 * [18] 14788">
+        <div class="stock-item-name">坤恒顺维</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sh.688283</span>
+          <span class="stock-item-mc">39.7亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">62.0%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="宏达电子" data-code="sz.300726" data-mc="369.42034097" data-gm26="0.6" data-intro="宏达电子（股票代码：300726.SZ）是中国电子元器件行业的重要参与者，尤其在钽电容器领域拥有突出优势。以下基于明确指向该公司的信息，介绍其业务布局、市场地位及潜在价值。  ## 业务与市场地位  宏达电子是全球钽电容器的主要制造商之一，全球市场占有率排名第五。其产品线涵盖钽电容器（民用及军用）、陶瓷结构件（包括光模块陶瓷结构件、陶瓷薄膜电路、单层陶瓷芯片电容等）以及平面硅电容器（用于光通信领域）。在客户拓展方面，公司的钽电容器已进入多家国内头部服务器厂商和固态硬盘厂商的供应体系，陶瓷结构件则供货给国内外头部光模块厂商，民品钽电容也有部分供应国产服务器。此外，公司还积极布局硅电容等新产品，拓宽业务边界。  在军工领域，宏达电子具备较强的技术实力，其产品填补了欧美禁供带来的市场空白，展现出坚实的国产替代能力。公司与凯华材料建立了长期稳定的合作关系，同时也是顶立科技高性能陶瓷热工装备的客户。  ## 财务表现与增长预期  根据已披露信息，宏达电子2025年民品业务实现营业收入34,027.49万元，同比增长58.86%，显示出强劲的增长势头。分析师预计公司2026年至2028年归母净利润将分别达到4.48亿元、5.67亿元和7.39亿元，反映市场对其未来盈利能力的持续看好。首次覆盖该公司并给予“增持”评级的研报，进一步肯定了其投资价值。  从行业层面看，钽电容市场在短期2-3年内涨价确定性极高，宏达电子作为国内军工钽电容的龙头企业之一，有望充分受益于这一景气周期。尽管民用市场与海外先进水平仍存在差距，但军工领域的深厚积累和国产替代的持续推进，为公司的长期成长提供了坚实支撑。  综合而言，宏达电子凭借在钽电容领域的全球地位、军工技术壁垒以及不断扩展的陶瓷结构件等新产品线，正从多个维度构建其价值基础。短期涨价因素与中长期民品突破、国产替代趋势共同构成了其投资逻辑的核心。  ### References  - [1] my39">
+        <div class="stock-item-name">宏达电子</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sz.300726</span>
+          <span class="stock-item-mc">369.4亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">60.0%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="普源精电" data-code="sh.688337" data-mc="136.04167841" data-gm26="0.581" data-intro="根据提供的知识库信息，普源精电（Rigol Technologies，股票代码 sh.688337）是一家专注于通用电子测量仪器的中国龙头企业，其核心竞争力和价值体现在以下几个方面：  ## 公司概况与市场地位  普源精电成立于2009年，是国内最大的电子测量仪器厂商，2024年其示波器营收位列全球第五、中国企业第一。公司是**国内唯一实现搭载自研ASIC数字示波器商业化落地的企业**，其ASIC技术平台构成核心竞争力。主营业务涵盖数字示波器、精密电源、矢量网络分析仪、频谱仪等电子测量设备的研发与销售，并逐步向光通信测试系统、先进计算解决方案等方向延伸。  ## 业绩表现与增长动力  **2026年第一季度业绩表现超预期**：公司实现营业收入2.3亿元（同比增长38%），归母净利润0.23亿元（同比增长512%），扣非归母净利润0.15亿元（同比扭亏）。收入超预期主要由两大驱动因素贡献： - **解决方案业务**：实现销售收入0.68亿元，同比增长144.64%，毛利率约65%，成为收入超预期的主要驱动力； - **光通信核心大客户**：销售收入同比增长147.71%，公司已绑定中际旭创等大客户，订单金额约1亿元。  此外，搭载自研芯片的数字示波器销售收入同比增长20%，其中高分辨率/高端示波器分别增长25%/29%，体现产品高端化成效。  ## 盈利能力与费用优化  公司2026年第一季度毛利率为58.10%，同比提升1.95个百分点，主要受益于高毛利率的解决方案业务占比提升。期间费用率显著优化：研发费用率24%（同比下降7个百分点）、销售费用率13%（同比下降4个百分点）、管理费用率9%（同比下降5个百分点）。新品放量和解决方案业务兑现带来规模效应，摊薄了期间费用。  ## 技术优势与产品布局  - **自研芯片**：公司拥有自研示波器核心芯片组，是国内唯一成功产业化的企业，核心技术平台在示波器中的搭载比例达86.77%。 - **高端产品线**：2023年发布国产首款13GHz高端示波器（销售持续放量），2025年发布26.5GHz矢量网络分析仪，并规划推出MHO/DHO/DS80000系列示波器、DNA5000/6000系列网分、RSA6000系列频谱仪等新品。 - **光通信测试**：在光模块检测环节持续布局，测试仪器向高速率、大带宽演进，价值量提升；同时正在配合客户研发3.2T光模块测试用的采样示波器。 - **先进计算解决方案**：SPQ阵列测控系统已在国内数十个研究机构部署，2025年相关合同收入同比增长910.26%，是先进计算测控领域的标杆性方案。  ## 成长前景与市场预期  公司2026年被市场视为**业绩拐点和产品大年**，有望迎来新一轮增长。光通信领域精密电源接单预期饱满，高带宽实时/采样示波器等新品待落地，驱动收入订单持续增长。公司在量子业务方面也具有显著弹性。此外，公司已披露拟发行H股并在香港联交所上市的计划。  ## 机构观点与估值  多家券商给予积极评价： - **东吴机械**维持“增持”评级，预测2026-2028年归母净利润1.5/2.4/3.5亿元； - **国信机械**建议积极布局，认为公司切入光通信赛道具备客户绑定与技术复用优势，解决方案业务中先进计算实现放量； - **国投证券计算机团队**、**中泰机械**等机构也将普源精电列为推荐标的或重点推荐。  风险提示方面需关注：新品落地和客户拓展不及预期、地缘政治冲突加剧、原材料价格波动等。  ### References  - [12] 15988 - [14] 21387 - [15] 21443 - [16] 21561">
+        <div class="stock-item-name">普源精电</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sh.688337</span>
+          <span class="stock-item-mc">136.0亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">58.1%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="奥普特" data-code="sh.688686" data-mc="188.48707161" data-gm26="0.5773" data-intro="奥普特（股票代码 sh.688686）是一家在机器视觉领域具备全球领先地位的企业，其核心业务覆盖从光源、镜头到视觉控制系统的自动化核心零部件全链条。公司被公认为机器视觉行业的龙头企业，尤其在光源环节卡位优势突出，能够为下游客户提供完整的视觉检测、视觉引导和运动控制解决方案。  在增长驱动方面，奥普特显著受益于3D打印技术的产业爆发。3D打印设备中约10%至15%的价值量来自机器视觉模块，以未来3年2万台设备、单台价值200万至300万元估算，对应机器视觉市场空间可达40亿至90亿元，公司已在该领域与客户建立订单并小批量供货，有望占据较大市场份额。此外，AI相关领域如光模块、CPO、PCB及半导体的生产检测同样需要机器视觉，随着检测工序增多、精度提升，离线抽检向在线全检转化将推动市场空间持续扩大，公司已与猎奇、普莱信等客户开展合作。  奥普特还深度嵌入苹果供应链，作为关键视觉部件供应商，有望在苹果26年至27年的创新大年中受益于新品和关键部件的放量。同时，公司计划将业务版图进一步拓展至半导体、AI服务器和人形机器人等新兴领域，持续拓展头部客户群体，打开远期成长天花板。在资本市场层面，申万研究所已给予公司买入评级，多家分析报告指出当前公司存在预期差，具备翻倍空间。  综合来看，奥普特作为机器视觉领域的核心供应商，凭借全链条产品布局、头部客户绑定以及AI和3D打印等增量需求的催化，展现出较强的业绩弹性和长期投资价值。  ### References  - [2] 奥普特：有预期差的标的 - [14] 光模块设备资本开支积极，重视稀缺性与边际变化">
+        <div class="stock-item-name">奥普特</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sh.688686</span>
+          <span class="stock-item-mc">188.5亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">57.7%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="三旺通信" data-code="sh.688618" data-mc="33.63967284" data-gm26="0.573" data-intro="### 公司概况与核心业务  三旺通信（股票代码 sh.688618）是一家专注于工业交换机研发与生产的科技企业。公司长期深耕煤矿通信网络建设和智能化改造，其智能能源板块的营收占比超过50%，是煤炭行业智能化基础设施的核心供应商。公司以“千兆工业环网+无线覆盖”作为架构核心，支撑井下高可靠、低延时的数据传输，并推出了**煤炭无人化综采综掘系统**、**井下综合监控与调度系统**等通信解决方案，成功服务于多个智能化示范矿井，为矿山无人化、智能化提供关键网络底座。  ### 战略布局与第二成长曲线  除传统主业外，三旺通信积极拓展卫星资产布局，开启第二成长曲线。公司通过**参股南京迈矽科**、**控股苏州金以太**等优质资产，抢先布局星上核心环节。特别是，公司持有**古迈矽科16%的股权**，深度参与TR芯片（卫星互联网关键射频芯片）环节。同时，公司将**TSN（时间敏感网络）技术**应用于商业航天领域，巩固其在卫星互联网通信中的技术卡位。伴随SpaceX上市预期的升温，三旺通信的卫星资产有望迎来价值重估。  ### 市场催化与价值逻辑  近期山西煤矿爆炸事故再次凸显煤炭无人化、智能化的紧迫性，国家政策持续加码，三旺通信作为工业交换机龙头直接受益。公司主业受益于智能化改造需求增长，同时卫星资产布局提供充足的估值弹性，形成“传统主业稳增长+卫星资产期权”的双驱动价值模型。此外，公司产品体系覆盖全场景，在卫星互联网、煤矿智能化、商业航天TSN等多个高景气赛道的叠加下，其长期成长空间值得关注。  ### References  * [1] 山西煤矿爆炸，关注煤炭智能化核心标的【三旺通信】，白送N个卫星资产 * [2] 通信观点0517">
+        <div class="stock-item-name">三旺通信</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sh.688618</span>
+          <span class="stock-item-mc">33.6亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">57.3%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="联动科技" data-code="sz.301369" data-mc="229.71165619" data-gm26="0.5628" data-intro="联动科技（股票代码 sz.301369）是一家专注于半导体测试领域的中国设备公司，被市场定位为功率芯片测试机龙头，同时延伸至SoC（系统级芯片）测试和碳化硅（SiC）设备制造。公司业务覆盖后道封测设备，其核心产品包括功率测试机和模拟测试机，其中功率测试占订单结构的60%至70%，模拟测试约占20%。此外，联动科技已推出面向AI与大算力市场的SoC测试机9800系列，该设备目前正处于验证阶段，并积极对接国产算力头部客户，与天数智芯建立了战略合作关系。在碳化硅领域，公司作为设备生产厂家，受益于行业需求增长，在手订单显著提升。  从经营数据看，联动科技当前订单饱满。根据2026年5月的调研信息，公司2026年第一季度新签订单达3亿元，4月单月新签1亿元，全年订单总额从最初的7至8亿元上修至10亿元，达到去年同期的两倍以上，反映出供不应求的现状。订单结构持续优化，海外订单占比已提升至三成，有望带动毛利率提升。在AI SoC测试机方面，公司已于2026年第一季度启动内部测试，预计2027年将在客户端实现放量，成为未来的重要增长极。  关于市值空间，市场观点认为联动科技具备翻倍潜力。参考长川科技、华峰测控等同类公司估值，结合主业受益于国产封测厂扩产，预计2027年订单有望达到15亿元以上，给予10倍市销率对应约150亿元市值；叠加AI SoC测试机放量预期，整体市值至少有望达到300亿元以上。多家券商（如国联民生电子、广发机械）持续关注并看好该公司，将其列为半导体设备、碳化硅设备及后道设备组合中的核心标的。  ### References  * [1] 29661 * [2] 46886 * [6] 46940 * [16] 48061 * [3] 44787">
+        <div class="stock-item-name">联动科技</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sz.301369</span>
+          <span class="stock-item-mc">229.7亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">56.3%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="安集科技" data-code="sh.688019" data-mc="624.42200413" data-gm26="0.5546" data-intro="安集科技（股票代码：688019）是一家中国半导体材料与零部件公司，被业界视为该板块的重点标的和优质龙头。公司是化学机械抛光（CMP）抛光液领域的国内绝对龙头，全球市占率约10%。其核心产品深度绑定中芯国际、华虹等头部客户，并通过上海集成电路产投间接持股华虹半导体。在存储领域，公司是长鑫存储CMP抛光液的核心供应商，份额领先，同时为长江存储提供抛光液材料。由于深度受益于国内晶圆厂扩产及国产替代趋势，安集科技被长江电子、国联民生电子等多家机构推荐为存储扩产受益标的。  在技术层面，安集科技的抛光液已通过英特尔14nm/18A制程认证，并实现长鑫17nm先进制程批量供货，体现了其在先进制程上的领先能力。公司还生产TSV抛光液，被视为CMP领域的关键厂商，并受益于3D IC时代的发展。除了CMP抛光液，公司业务还包括功能性湿电子化学品（如光刻胶去除剂），展现出良好的行业格局和抗周期波动能力。整体市值约为430亿元，属于头部半导体材料企业。  近期，安集科技出现股价回调，部分受美股英特格（ENTG）股价影响，但公司一季报表现不低于预期。整体毛利率出现下滑趋势，主要由于业务结构变化，功能性湿电子化学品占比提升所致，同时股份支付费用和财务费用增加使得净利润增速慢于营收增速。尽管如此，市场认为其核心产品在各大晶圆厂占据主导地位，存储扩产和国产替代的确定性较高，长期发展前景被看好。此外，三孚股份2028年预测市盈率约40倍，与安集科技类似，显示出市场对半导体材料板块的估值参考意义。  ### References  - [2] 7201 - [5] 11692 - [8] 17279 - [11] 18462 - [14] my15">
+        <div class="stock-item-name">安集科技</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sh.688019</span>
+          <span class="stock-item-mc">624.4亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">55.5%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="鼎龙股份" data-code="sz.300054" data-mc="905.8814874" data-gm26="0.5495" data-intro="鼎龙股份（全称湖北鼎龙控股股份有限公司，股票代码 **sz.300054**）是一家总部位于湖北江夏的半导体材料及打印复印通用耗材公司，核心业务聚焦于 **CMP 抛光垫、抛光液、光刻胶（KrF/ArF）** 等半导体材料，并布局显示材料及锂电辅材，凭借平台化发展正迈向千亿市值。  ### 公司核心业务与赛道地位  鼎龙股份是国内 **CMP 抛光垫的绝对龙头**，市占率领先，2025年抛光垫业务营收达 **10.9 亿元**（同比增长 52.3%），其中硬垫贡献 90% 以上收入；同时，公司已完成 **CMP 抛光液全品类布局**，涵盖钨、铝、铜阻挡层、碳化硅衬底等多种抛光液，2025年抛光液及清洗液营收 **2.9 亿元**（同比增长 36.8%）。在光刻胶领域，公司已有 **3 款 KrF/ArF 光刻胶进入稳定批量供应**，并切入头部存储厂供应链，2026 年被定为商业化元年。  公司还全面进军 **玻璃基板（板级封装）领域**，其 CMP 抛光垫已获重要封装客户订单，正式进入以玻璃基板为代表的先进封装产线，这被视为业绩与估值的双重驱动。此外，公司通过收购皓飞新材切入锂电粘结剂与分散剂行业，并逐步剥离低毛利打印耗材业务，聚焦高附加值半导体材料。  ### 关键财务与运营数据  2025 年公司实现总营收 **36.6 亿元**，归母净利润 **7.2 亿元**（同比增长 38.3%），半导体材料营收占比首次超过 50%。2026 年第一季度营收 **10.2 亿元**（同比增长 23.8%），归母净利润 **约 2.5 亿元**（同比增长 78%），毛利率创历史新高。具体业务表现上，26Q1 抛光垫营收同比增长 **71.2%**，抛光液营收同比增长 **54%**，光刻胶进入放量阶段。公司正扩建潜江 CMP 软抛光垫产线（规划年产 30 万片，预计 2026 年底投产），同时第二工厂也已启动建设，以满足旺盛的订单需求。  ### 成长驱动与市场认可  鼎龙股份深度绑定 **长江存储、长鑫存储** 等国内存储大厂，并已通过 **三星、海力士 HBM 产线验证导入**，受益于存储扩产及国产替代趋势，确定性高、抗周期性强。在先进封装（玻璃基板、3D IC）、第三代半导体（SiC 衬底抛光液）以及光刻胶替代（替代信越、JSR）等多条增长路径上均有实质性突破。多家机构（如国金电子、财通电子）持续推荐，认为公司是半导体材料赛道中高景气且估值合理的核心标的，目标市值看至千亿水平。  ### 风险提示  需注意海外产线导入速度不及预期、高端光刻胶盈利兑现节奏以及打印耗材业务剥离对短期营收的扰动。  ### References  - [1] 鼎龙股份26Q1点评-超预期 (国金电子) - [2] 鼎龙股份25年报&26Q1业绩预告点评 (国金电子) - [3] 扩建CMP软抛光垫产线，坚定持续看好公司发展前景 (财通电子) - [4] 玻璃基板重要订单正式落地，CMP龙头迎价值重估 - [5] CMP抛光液再次取得重大进展 (国金电子)">
+        <div class="stock-item-name">鼎龙股份</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sz.300054</span>
+          <span class="stock-item-mc">905.9亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">54.9%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="龙迅股份" data-code="sh.688486" data-mc="108.94591485" data-gm26="0.549" data-intro="龙迅股份（股票代码：688486.SH）是一家专注于超高速高清显示及边缘数据传输接口芯片的A股上市公司，其核心产品涵盖HDMI等接口芯片，是国产算力板块中的重要AI互连标的。在AI从云端向边缘设备下沉的趋势中，龙迅股份的芯片被用于边缘设备的数据流转，服务于Edge AI场景，具备清晰的业务定位。  从市场价值来看，近期龙迅股份的股价表现较为低迷，但分析观点认为，当前股价已到达值得加仓的位置，其作为AI互连领域的稀缺标的，后续有望受益于国产替代和边缘计算需求的增长。  ### References  - [10] 40 - [11] 43472">
+        <div class="stock-item-name">龙迅股份</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sh.688486</span>
+          <span class="stock-item-mc">108.9亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">54.9%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="国盾量子" data-code="sh.688027" data-mc="509.05909395" data-gm26="0.5436" data-intro="根据提供的信息，国盾量子（股票代码 sh.688027）是一家在量子科技领域具有重要地位的中国上市公司，主要专注于量子通信和量子计算相关产业。公司已与中国电信合作，联合发布了 **REED ONE GK5 量子通信手机**，这标志着其在量子通信终端设备领域的实际应用进展。此外，国盾量子被明确列为量子通信概念股，同时也被市场视为量子计算领域的投资标的。  在近期产业催化方面，美国政府宣布向量子计算领域注入 **20 亿美金联邦资金**，其中 IBM 获得 10 亿美金建设量子芯片代工厂，这一事件带动了全球量子板块关注度提升。国内层面，十五五规划中将量子科技列为未来产业首位，政策扶持预期强烈。一级市场多家量子企业（如国仪量子等）融资进程加速，IPO 上市节奏加快，形成了板块效应，国盾量子作为 A 股稀缺的量子科技公司，受益于这一趋势。  投资价值方面，国投证券计算机团队曾明确推荐国盾量子作为投资标的。在市场情绪上，量子计算板块的大涨直接带动了国盾量子等标的的关注度。综合来看，公司受益于量子通信产业化加速、量子计算技术突破预期以及国家战略支持，具有较高的市场辨识度和成长潜力。  ### References  - [12] 31849 - [13] 36380">
+        <div class="stock-item-name">国盾量子</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sh.688027</span>
+          <span class="stock-item-mc">509.1亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">54.4%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="川投能源" data-code="sh.600674" data-mc="681.95749524" data-gm26="0.5405" data-intro="川投能源（股票代码 sh.600674）是一家电力行业的上市公司，主要业务涵盖水电和火电领域。公司是水电企业，去年水电发电量基数偏低，但随着厄尔尼诺气候现象的到来，长江及以南地区降水有望显著增加，来水改善将为公司带来较大的发电量弹性，实现“量价齐升”的业绩确定性。同时，川投能源也涉及火电业务，在高温用电高峰期间，火电作为“压舱石”能够保障供电稳定。  在投资价值方面，川投能源被多家研究机构列为重点关注标的。伴随夏季厄尔尼诺高温天气拉动用电需求，以及西南地区水电站蓄能指标好转，公司有望直接受益于水电出力改善，叠加电力供需格局趋紧及电价支撑，其业绩弹性值得关注。此外，公司作为电力板块中的水电代表，在煤价上涨背景下，成本相对可控，且具备现金流充沛、高股息等防御属性。  ### References  * [1] 24786 * [3] 34370">
+        <div class="stock-item-name">川投能源</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sh.600674</span>
+          <span class="stock-item-mc">682.0亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">54.0%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="北摩高科" data-code="sz.002985" data-mc="93.18449088" data-gm26="0.5359" data-intro="## 北摩高科（股票代码 sz.002985）情况与价值  北摩高科是一家A股上市公司，业务聚焦于**航空制动材料及装置**，并涉及**军机刹车系统健康监测**，属于**装备智能运维**领域。在军工与AI结合的应用场景中，其军机刹车系统健康监测技术被视为装备智能运维的重要渗透方向。同时，公司被多家机构列为**航空航天受益标的**和**大飞机领域关注标的**，体现了其在航空航天产业链中的战略地位。  从机构视角来看，北摩高科在多个行业报告中被反复提及：华西军工将其列入航空航天新兴支柱产业的受益名单；广发军工团队在大飞机板块中持续关注该公司，认为其受益于C919规模化交付与国产替代进程。此外，在地缘冲突加速AI去监管化的背景下，资金对“战场大脑”及硬核实战标的的挖掘中，北摩高科也被纳入装备智能运维的核心标的，反映了公司在军机健康监测细分领域的独特价值。  总体而言，北摩高科凭借在航空制动系统和装备智能运维领域的技术积累，深度绑定航空航天与大飞机产业趋势，具备明确的成长逻辑与市场关注度。  ### References  * [1] 263 * [3] 2447 * [5] 21309">
+        <div class="stock-item-name">北摩高科</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sz.002985</span>
+          <span class="stock-item-mc">93.2亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">53.6%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="睿创微纳" data-code="sh.688002" data-mc="673.34686024" data-gm26="0.534" data-intro="睿创微纳技术股份有限公司（sh.688002）是一家专注于红外热成像及微波技术领域的军工企业，同时覆盖微纳器件制造与商业航天产业链。公司拥有自有晶圆厂，核心产品包括红外探测器、微波器件及商业航天相关组件，并率先实现了8微米大面阵红外探测器的量产。目前，公司整体处于产能供不应求、订单积压的景气周期，并已启动涨价过程以应对上游原材料成本传导。在军工板块中，睿创微纳被推荐为Q1业绩线及外延推荐标的，具备较强的市场关注度。  ### 产能与订单现状  睿创微纳当前面临产能瓶颈，核心制约因素在于晶圆厂。在手订单体量较大，导致交付周期延长至1-3个月，合同负债处于高位。为缓解产能压力，公司计划于2025年第三季度进行自有晶圆厂扩产，其旗下自有晶圆厂齐新半导体收入已从6000万元增长至2.4亿元；2026年第二季度将同步推进自有晶圆厂扩产及外部成熟代工厂合作，预计2026年下半年产能较2025年上半年实现翻倍增长，月产值有望从2025年第二季度的4-5亿元提升至9亿元以上。这一产能扩张节奏将显著改善交付紧张状况，并支撑后续收入增长。  ### 下游需求与成长驱动力  公司下游需求覆盖海外民用与国内工业两大场景。海外及民品收入占比约70%（其中海外约30%，民品约40-50%），海外市场需求除传统狩猎外，观鸟、竞技及工业产品也呈现高速增长；国内工业安防领域（电网、有色、低空无人机等场景）需求大幅增长，叠加国产替代加速，进一步推动订单放量。在车载业务方面，红外产品已获得多家乘用车、越野车及商用车定点，同时配套4D毫米波雷达，自研芯片年内可实现迭代搭载。随着成本下降，车载红外有望复刻此前无人机配套提升路径，成为新的增长极。  ### 微波与商业航天业务弹性  微波业务在2025年处于老型号采购末期，但2026年后新防务订单顺利承接叠加商业航天项目落地，有望开启规模化收入贡献。商业航天方面，公司星间激光通信产品（InGaAs探测器）已向主流客户交付，相控阵地面终端中标星网项目，激光通信红外APT模组及TR组件均进入小批量供货阶段。睿创微纳是少数同时布局地面终端与星上载荷的企业，单星价值量接近500万元，潜在利润弹性近60亿元，商业航天业务有望成为未来业绩的超预期增长点。  ### 财务展望与估值  基于红外高景气度、涨价弹性及产能扩张，市场预期公司2026年净利润有望达到18亿元以上，同比增长约63%。参考同业高德红外的估值水平，给予50倍PE，对应目标市值超过900亿元，相较于当前市值存在约50%的上行空间。此外，电网改造投资（国内十五五期间4万亿，同比增长40%）叠加海外AI驱动的电网升级，将驱动工业红外场景需求保持50%以上复合增速，进一步强化业绩确定性。  ### References  * [2] 天风汽车睿创微纳电话会要点-0410 * [8] 睿创电话会实时更新（很超预期） * [11] 天风汽车缺什么买什么系列之红外&航改燃 * [14] 军工板块反弹买什么？">
+        <div class="stock-item-name">睿创微纳</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sh.688002</span>
+          <span class="stock-item-mc">673.3亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">53.4%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="华明装备" data-code="sz.002270" data-mc="169.02811629" data-gm26="0.5325" data-intro="华明装备（股票代码 sz.002270）是一家中国电力设备制造企业，主营业务覆盖电力设备主网领域，是变压器上游的装备供应商，具备全球供货能力。公司受益于美国大规模基础设施建设引发的全球供应链虹吸效应以及海外订单的持续溢出，已成为国内电力设备出海的重要参与者 [2]。在具体市场方面，华明装备已批量出口高压电力设备，例如为巴西电网提供高压分接开关，展现了其在海外市场的竞争力 [14]。此外，北欧地区因数据中心和工业复苏导致缺电，带动电力设备订单加速，华明装备被列为重点受益标的之一 [11]。从投资价值来看，华明装备在电网设备板块中被多次推荐为出海方向的关注重点，具备较高的业绩确定性和成长性。  ### References  - [2] 750亿美元扩建超高压电网，北美缺电持续演绎 - [11] 天风电新：再看欧洲缺电：【北欧】是重点，看好海风&电力互联&电力设备 - [14] 巴西电网将投zi千亿升级输电能力，中国高压设备出海将持续迎来放量">
+        <div class="stock-item-name">华明装备</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sz.002270</span>
+          <span class="stock-item-mc">169.0亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">53.2%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="维宏股份" data-code="sz.300508" data-mc="56.14293701" data-gm26="0.5298" data-intro="维宏股份（股票代码 **sz.300508**）是一家专注于数控系统、运控/伺服控制等产品的中国工业母机及机器人领域企业。公司在金属切削系统方面表现突出，2025年相关收入同比增长26%，并积极布局人形机器人电机业务，被华鑫汽车&机器人推荐为核心组合标的之一。  ### 国产替代与新业务进展  当前海外数控系统龙头（如发那科、三菱）因上游物料短缺（PCB和芯片产能被AI服务器挤压）而出现交货周期延长甚至砍单现象，为国产数控系统厂商带来了关键的替代窗口。维宏股份作为国内数控系统厂商，有望受益于这一进程，填补日本系统留下的5-10万台/年的市场缺口。公司已在PCB金属钻攻机领域开发出新产品，目前处于小批量验证阶段，预计将于2026年6月正式向市场全面推广，这将进一步打开其成长空间。  ### 机器人与人形机器人布局  维宏股份通过子公司**汉姆电子**主攻灵巧手关节模组，并已与多家头部客户签署保密协议（NDA），重要客户包括灵心巧手、因时、英伟达、SKid AI、李飞飞实验室、Apptronik等。公司在机器人激光雷达电机市场拥有极高市占率，运控/伺服控制技术与机器人电机技术高度协同，为人形机器人产业链提供核心零部件。  ### 财务与估值展望  尽管2026年第一季度表观业绩因阶段性财务影响出现下滑，但管理层对全年业绩维持增长及金属切割领域产品放量保持信心。海外数控系统紧缺叠加国产替代加速，预计将带动公司控制卡业务（激光、车床领域）增长，估值有望修复。  ### References  - [2] 东财电新维宏股份点评 - [14] 中泰机械数控系统行业点评">
+        <div class="stock-item-name">维宏股份</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sz.300508</span>
+          <span class="stock-item-mc">56.1亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">53.0%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="熵基科技" data-code="sz.301330" data-mc="58.32011409" data-gm26="0.5235" data-intro="熵基科技（股票代码：301330）是一家专注于物理AI（Physical AI）领域的中国科技公司。其核心逻辑在于将AI从数字世界延伸至物理世界，通过构建五层全栈技术架构（算力层、感知层、边缘智能层、云层与决策层），深度融合BioCV视觉技术、多模态生物识别与空间计算技术，使园区、楼宇、零售等物理空间具备自主“思考”、自主决策并驱动设备的能力。这一技术路径使其成为市场认定的物理AI核心标的。  此外，熵基科技也被列入非侵入式脑机接口领域的相关标的。在脑机接口产业加速落地的背景下，公司作为非侵入式方向的重要参与者，受益于政策支持（如“十五五”规划将脑机接口列为未来产业）与行业催化（如博睿康产品获批、Neuralink扩建等），具备进一步发展的潜力。  总体而言，熵基科技以“物理AI”为核心定位，凭借其在视觉、生物识别及空间计算方面的技术融合，致力于打造可自主决策的物理空间解决方案，同时在脑机接口新兴领域有所布局，展现出明确的成长价值。  ### References  - [2] 6286 - [4] 40728 - [6] 40729">
+        <div class="stock-item-name">熵基科技</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sz.301330</span>
+          <span class="stock-item-mc">58.3亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">52.3%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="峰岹科技" data-code="sh.688279" data-mc="229.68712382" data-gm26="0.5182" data-intro="### 公司基本情况  峰岹科技（股票代码：sh.688279）是一家专注于电机驱动芯片研发与设计的高科技上市公司，核心业务涵盖电机驱动芯片、自研传感器及相关控制算法。其产品主要应用于机器人电机与传感器、服务器散热风扇以及汽车电子等领域。公司深度绑定特斯拉供应链，被视为特斯拉一级供应商（T链T1）的核心标的之一，并受到申万机器人、国泰海通、浙商机械、华福大制造等多个券商与研究团队的持续关注，在人形机器人、具身智能及机器人板块中占有重要地位。  ### 主营业务与市场地位  峰岹科技的主营业务是电机驱动芯片，下游应用空间广阔。其中，**服务器散热**是公司当前的重要增长点。公司通过深度绑定台湾头部散热厂商（如富士康、台达等），为其提供马达优化、芯片及算法的全套方案，凭借自研ASIC的性价比优势，已导入台企头部五家客户。尽管市场担忧风冷向液冷转型会压缩市场，但分析指出液冷普及后仍将保留约1/3的风扇需求，且液冷新增的泵阀需求会进一步带动电机用量提升。预计2026年服务器收入将达到3亿元，成为仅次于小家电的第二大营收来源，占比近30%。此外，公司在汽车与家电领域也有广泛布局，合计市场空间约250亿元，15%的份额即可对应30–40亿元收入、10–12亿元利润[2][8][11]。  ### 机器人业务布局与优势  机器人业务是峰岹科技的核心战略方向，被市场视为“期权”弹性来源。公司已与三花智控成立合资公司（持股36%），主攻**空心杯电机**。空心杯电机采用FPCB绕组技术，体积小、散热好，转矩密度较市场同类产品提升30–50%，目前直径已做到10mm，成本低于行业水平。在位置传感器方面，公司自研的**旋变传感器**（单电机配两个旋变，并配套解码器）模块价值量可达150元，按T机器人16旋转+14直线配置测算，单机价值量达9000元。此外，公司还在研发小型化位置传感器方案，专门适配灵巧手需求。保守预计机器人单机ASP（单机价值）可达2.7万元（空心杯电机+旋变），在100万台量产规模下，仅机器人业务即可贡献约8.9亿元利润（考虑电机36%权益），对应270亿元目标市值[2][5][8][20]。  ### 财务与估值分析  峰岹科技当前呈现出**利润增速快于收入增速**的特征，处于业绩拐点阶段。2026年第一季度收入同比增长40%，利润同比增长80%，规模效应下净利率有望大幅提升。相比其他半导体芯片公司60–80倍的PE，当前A股股价对应约35倍PE、H股约25倍PE，具备明显的估值性价比。多家机构给出目标市值：天风汽车团队认为公司合理市值可达**540亿元**（A股较当前有120%空间，H股有290%空间），另一份更新的研报甚至给出**640亿元**目标市值（A股130%空间，H股270%空间）。机器人业务按20%份额、20%净利率测算，叠加服务器+汽车主业及其他业务，公司合计目标市值区间为540–640亿元[5][8][11][14]。  ### 总结与展望  峰岹科技凭借电机芯片主业的高景气度（服务器、汽车放量）以及机器人业务的巨大期权（空心杯电机、旋变传感器、灵巧手方案），成为T链确定性最强且兼具弹性的核心标的。在特斯拉Optimus量产临近（预计2026年7–8月启动）、国产机器人加速发展等催化下，公司有望充分受益。当前板块调整后，机构普遍认为5–6月是配置良机，峰岹科技值得重点跟踪[8][11][13][20]。  ### References  - [2] 29699 - [5] 27901 - [8] 31869 - [11] 28464 - [14] 27939">
+        <div class="stock-item-name">峰岹科技</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sh.688279</span>
+          <span class="stock-item-mc">229.7亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">51.8%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="快克智能" data-code="sh.603203" data-mc="250.81873628" data-gm26="0.4976" data-intro="快克智能（股票代码 sh.603203）是一家聚焦于**半导体设备、光模块自动化设备及精密焊接检测**领域的国内领先企业，被市场视为“国产ASMPT”，在多个高成长赛道实现全面布局。  ## 业务全景与核心优势  **1. TCB热压键合设备：HBM产业链核心环节**   HBM（高带宽存储）实现DRAM堆叠的核心工艺是TCB（热压键合）设备，该设备通过局部加热加压确保焊接精准稳定。据摩根大通预测，HBM用TCB键合机市场规模将从2024年的4.61亿美元增长至2027年的15亿美元。快克智能背靠大客户攻克了HBM/C2W核心TCB设备，为国内领先，自2023年9月起已向多位核心大客户**付费打样**，单台价值量千万以上。预计未来三年国内每年TCB设备需求在百台以上，对应30-50亿元市场空间。    **2. 光模块自动化设备：覆盖头部厂商**   公司向光模块头部客户供应**焊接设备、AOI全检设备、固晶设备**，目前已切入zjxc（中际旭创）、xys（新易盛）、H（华工科技）、ses（索尔思）等供应链，今年已有小批量供应，预计明年将快速放量。公司有望依托3C设备积淀成为光模块设备龙头。  **3. 功率半导体设备：爆单放量**   功率半导体固晶机与SiC纳米银烧结设备订单爆满，2026年预计贡献**3-4亿元收入**，相比去年翻4-5倍，且设备仍在涨价。客户涵盖英飞凌、安世半导体、扬杰、士兰微等头部企业。  **4. PCB设备与子公司布局**   子公司NOC向鹏鼎等板厂批量供应激光打标/激光切割设备，年收入约1.5亿元，随客户扩产及Rubin出货临近有望持续增长。  **5. 苹果产业链（3C设备）**   作为果链核心供应商，受益于2026/2027年苹果创新大年（折叠屏、AI眼镜等），预计每年带来**2-3亿元收入增量**。  ## 全球布局与产能  公司在墨西哥、土耳其、波兰、马来西亚、泰国、越南等国家建立了全球化服务网络，越南设有全资子公司。日本子公司负责碳化硅固晶机业务，因产能供不应求已开启涨价限单。  ## 财务与市值价值  市场预计公司2026年利润有望达3.5亿元以上，远期空间广阔。当前市值基本只反映传统主业，而HBM、光模块、功率半导体等新业务均处于爆发前夜。公司被视为“小白马”，在TCB设备、光模块AOI、功率半导体固晶机等细分领域卡位优秀，有望充分受益于存储扩产、CPO放量及国产替代趋势。  ## 总结  快克智能通过**TCB热压键合（HBM）**、**光模块自动化**、**功率半导体设备**、**PCB设备**及**苹果产业链**五大业务协同共振，以3C设备为基石，向高端半导体设备快速拓展。其HBM TCB设备国内领先，光模块设备已切入头部客户，功率半导体设备爆单，叠加全球服务网络与产能扩张，具备显著的成长弹性和估值提升空间。  ### References  - [12] 34802 - [13] 49005 - [14] my23 - [15] 32142 - [16] 32883">
+        <div class="stock-item-name">快克智能</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sh.603203</span>
+          <span class="stock-item-mc">250.8亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">49.8%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="科沃斯" data-code="sh.603486" data-mc="286.11682968" data-gm26="0.4959" data-intro="科沃斯（股票代码 sh.603486）是中国领先的家用服务机器人公司，主营扫地机器人、洗地机、割草机器人、擦窗机器人等产品，旗下拥有添可品牌。公司近年来加速全球化与平台化布局，2026年第一季度展现出强劲的营收增长和盈利能力，但短期受到汇兑损失的扰动。  ### 2026年第一季度财务表现  根据公司2026年第一季度报告，科沃斯实现营业收入**49亿元**，同比增长27.1%，超出市场预期（此前预期收入增速低于10%）。归母净利润为**4亿元**，同比下降14.7%，主要受上年同期高投资收益基数及本期约1.1亿元的汇兑损失拖累；扣非归母净利润为**4亿元**，同比增长11.5%，符合预期。毛利率达到**49.6%**，创历史新高，同比微降0.1个百分点，主要受关税及汇率影响。期间费用率整体优化，但财务费用率因汇兑损失同比上升3.2个百分点。净利率为8.3%，扣非净利率为8.1%，还原汇兑损失后净利率约为10.3%–10.5%，同比提升约1个百分点【2†L3-L14】【5†L6-L17】。  ### 业务亮点：出海加速与平台化协同  科沃斯2026年第一季度内销同比增长5%，外销同比增长47%，海外营收贡献预计首次超过国内。分区域看，欧美亚各区均实现20%以上增长，其中欧洲增速更快。分品牌看，科沃斯品牌收入增长30%，添可品牌增长25%，海外业务均实现高增（科沃斯外销+60%，添可外销+40%），全球化与多品类平台逻辑持续强化【2†L10-L14】。此外，公司通过一体化战略整合供应链，历史十年超300家对外投资（含仙工智能等独角兽），赋予垂直整合与创新潜能【2†L13-L15】。  ### 竞争格局与外部利好  在扫地机器人行业，科沃斯与石头科技均受益于竞争对手追觅科技融资受阻、海外“烧钱”行为缓和。追觅已开始裁员并控制费用投放，直接利好科沃斯和石头科技在海外市场的竞争环境【14†L3-L8】。同时，科沃斯投资的仙工智能（港股上市）亦有望增厚公司利润。  ### 估值与重估逻辑  截至2026年第一季度末，科沃斯总市值约350亿元，对应市盈率仅约15倍。华安证券认为，公司内生盈利能力自2024年第一季度起已连续两年验证改善韧性，当前估值尚未充分反映其出海化、平台化、一体化三大进阶逻辑。给予重估至25倍市盈率的目标，对应弹性空间约65%，并预测2026年全年收入和利润分别达228亿元和23亿元【2†L5-L9】【2†L17-L19】。  ### 经营质量与风险因素  经营质量方面，2026年第一季度存货周转天数为131.5天，同比增加16天，存货水平有所提升；经营性现金流净额为1.9亿元，同比下降78.6%，主要受上年同期收到大额国补款的高基数影响，但合同负债同比大增128.8%至5.88亿元，显示在手订单充足【5†L19-L22】。主要风险包括汇兑损失（单季约1.1亿元）、关税影响、以及行业竞争加剧。  综合来看，科沃斯在全球化拓展、多品牌运营和供应链整合方面展现出较强韧性，估值处于历史低位，具备一定的重估空间。  ### References  - [2] 23845 - [5] 23775 - [8] 26173 - [14] 38938">
+        <div class="stock-item-name">科沃斯</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sh.603486</span>
+          <span class="stock-item-mc">286.1亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">49.6%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="光力科技" data-code="sz.300480" data-mc="147.08943898" data-gm26="0.4956" data-intro="### 光力科技（股票代码：sz.300480）情况与价值分析  光力科技是一家专注于半导体后道封测领域的设备及耗材制造商，被市场视为国内划片机龙头及“去日化”（替代日本 Disco）的先锋企业。其核心产品为机械划片机、激光划片机、研磨抛光一体机以及配套的刀片、磨轮等核心耗材，致力于在划片、减薄、研磨等后道工艺环节实现对全球龙头 Disco 的全面对标与国产替代。公司机械划片机与刀片在国内已占据绝对龙头地位，2025 年 1‑2 月单月出货量约 40 台，同比增长超过 300%，订单持续向好。此外，公司积极扩充耗材产能，旗下 ADT 已具备年产 50 万片软刀能力，并在高新区规划了 200 万片软刀+硬刀产能，预计今年开始逐步释放。在激光划片机、激光隐切设备、研磨机等新产品方面，设备均已在客户端验证，研磨抛光一体机计划于明年推出，旨在进一步拓展先进封装市场。  从市场空间看，国内机械划片机、激光划片机、研磨抛光及刀片磨轮市场合计约 80 亿元，随着先进封装快速发展，未来有望超 100 亿元。光力科技凭借机械划片机及刀片的国内领先地位，有望抢占国内 50% 以上份额，对应约 25 亿元收入；激光划片机及研磨抛光设备若在国内占据 20% 份额，可再获约 12 亿元收入。远期来看，公司整体毛利率预计达 45%，净利率约 25%，对应约 9 亿元利润，叠加其稳定的物联网业务（每年贡献约 3 亿元收入、5000 万至 1 亿元利润），公司远期总市值看 300 亿元（当前市值约 120 亿‑150 亿元），空间巨大。  在行业驱动因素方面，光力科技深度受益于下游封测厂景气度高涨、先进封装（如 CoWoS）扩产、以及 AI 算力带来的存储芯片与先进制程需求。公司被长江电子、天风电子等机构列为先进制程与封测设备重点标的，同时在“去日化”国产替代逻辑下，有望持续替代日本 Disco 的市场份额，其产品覆盖长鑫长存等后道设备环节。此外，公司还拥有物联网业务板块，每年稳定贡献约 3 亿元收入和 0.5‑1 亿元利润，构成远期市值的稳定支撑。  总体而言，光力科技作为后道设备国产替代的先锋，在划片机、刀片耗材领域已建立显著优势，并通过激光划片机、研磨抛光一体机等新产品持续拓展产品线，受益于先进封装与 AI 算力扩产周期，业绩与估值双击可期。  ### References  - [13] 16748 - [15] 28365 - [17] 21664 - [19] 28377">
+        <div class="stock-item-name">光力科技</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sz.300480</span>
+          <span class="stock-item-mc">147.1亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">49.6%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="隆扬电子" data-code="sz.301389" data-mc="266.4333" data-gm26="0.4938" data-intro="隆扬电子（股票代码：sz.301389）是一家专注于高端铜箔研发与生产的电子材料公司，尤其在 **HVLP5（超低轮廓铜箔）** 领域处于全球领先地位。公司成功实现了 HVLP5 铜箔与 PTFE（聚四氟乙烯）覆铜板的核心搭档量产，产品表面粗糙度小于 0.6 微米，在 AI 算力应用场景中具备关键价值 [13]。  ### 技术与产品布局 隆扬电子在铜箔产品线上具备前瞻性布局，除已量产的 HVLP5 外，同步送样 HVLP4，并前瞻开发 **载体铜箔** 和 **HVLP 铜箔**。其载体箔已向鹏鼎等头部 CCL 厂商及终端客户送样 [8][11]。公司通过 **磁控溅射 + 电镀技术** 提前卡位 HVLP-5，并已送样至台光 M10，进一步验证其技术实力与客户认可度。  ### 产能扩张规划 公司规划布局 **500 条 HVLP5 铜箔产线**，同时通过建设 **淮安高端铜箔二期项目**（已于近期开工，预计年内扩产）和 **泰国工厂** 来加速产能落地。此外，隆扬电子规划建设 **四个细胞工厂**，每个工厂具备 1200 万平产能，以提升生产灵活性和效率 [5][8][11]。  ### 业务整合与设备采购 隆扬电子通过收购 **德祐** 和 **双联** 为主业贡献额外利润，并签署了对赌协议。在设备端，公司已向 **明毅电子**（三孚新科控股子公司）采购表面处理机，预计采购 **10 台以上**，订单金额约 2 亿元，其设备需求随产能扩张提前释放 [2][5]。同时，**三孚新科** 也向隆扬电子提供表面镀铜设备，用于 HVLP5 铜箔生产 [8]。  ### 市场关注与财务展望 东吴电子将隆扬电子推荐为 PCB 板块相关标的，认为其具备清晰的产能扩张、技术研发和业务整合路径。从订单角度看，预计今年下半年订单金额为 **2 亿元**，明年订单金额可达 **5 亿元以上**，增速随 HVLP5 放量而加快 [5]。公司的远期规划目标为实现收入 **48 亿元**、利润 **12 亿元**，对应合计市值 **280 亿元**。  ### 核心优势总结 隆扬电子作为全球唯一实现 HVLP5 铜箔量产的企业，其产品与 PTFE 覆铜板形成核心搭档，价值量占比高达 30%-40%，深度受益于 AI 算力迭代带来的新材料需求。通过技术领先、产能扩张与业务整合，公司已构建起从设备到材料、从研发到量产的完整竞争壁垒，在电子材料行业内受到市场高度关注 [13][8]。  ### References  - [1] 34608 - [2] 34781 - [3] 30584 - [4] 29493 - [5] 366">
+        <div class="stock-item-name">隆扬电子</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sz.301389</span>
+          <span class="stock-item-mc">266.4亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">49.4%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="聚辰股份" data-code="sh.688123" data-mc="301.02502671" data-gm26="0.4893" data-intro="聚辰股份（股票代码 sh.688123）是一家中国领先的集成电路设计企业，专注于存储芯片及混合信号芯片的研发、设计与销售，属于国产利基存储厂商。公司核心产品线包括EEPROM、SPD、VPD、NOR Flash、SLC NAND等，其中SPD（串行存在检测）芯片是DDR5内存模组的核心管理单元，每根DDR5必须强制配套一颗。公司是国内极少数具备DDR5 SPD量产能力的厂商，赛道壁垒来自JEDEC认证、内存原厂兼容验证及长周期可靠性测试，客户切换成本极高。  **价值核心一：AI服务器内存扩容驱动SPD量价齐升**   真正的需求弹性来自AI服务器，特别是英伟达下一代Rubin架构。AI训练已从算力驱动演进为算力+内存系统协同驱动，Rubin NVL72机柜级方案的DDR5模组用量较传统服务器呈数量级增长，单GPU对应SPD用量可达8颗。聚辰股份作为国内稀缺的量产厂商，先发卡位价值显著。中长期有望从SPD单品延伸至VPD、EEPROM及完整DDR5内存管理芯片矩阵，打开第二成长曲线。Rubin大规模出货预期在2026H2至2027年，当前处于验证导入与备货前夕，是分歧后的布局窗口。  **价值核心二：VPD芯片即将放量，新增利润空间明确**   公司VPD（重要产品数据）芯片已完成流片并送测三星，检验完成在即，有望新增约10亿元利润空间。VPD产品应用于eSSD领域，是公司的重要期权之一，有望在三星验证通过后快速放量，打开新的增长极。  **价值核心三：A股唯一布局MRAM，卡位下一代存储技术**   聚辰股份深度布局MRAM（磁随机存取存储器），在台积电流片并即将回片。MRAM兼具接近SRAM的高速和低功耗特性，适用于AI存算一体、航天等高端场景。公司被视为A股唯一布局MRAM的上市公司，该技术有望成为长期价值催化剂。  **业绩与估值预期**   公司第二季度已明确业绩拐点，同时受益于NOR Flash和SLC NAND的涨价趋势。市场多家券商看好其成长性，华创电子将其形容为“Rubin时代最被低估的隐形卖水人”，预期目标市值达500亿元，具有3倍上涨空间。此外，长鑫科技IPO恢复问询并实现业绩大幅增长，聚辰作为其配套芯片供应商，亦受益于产业链共振。  总体来看，聚辰股份的核心价值并非简单的存储涨价周期，而是AI服务器架构升级带来的结构性SPD需求爆发，叠加VPD、MRAM等新业务的期权价值。公司在DDR5 SPD、汽车EEPROM、eSSD VPD等细分领域具备显著竞争优势，是利基存储及配套芯片领域值得重点关注的标的。  ### References  - [3] 聚辰股份是Rubin时代被低估的DDR5 SPD卖水人，AI - [9] 聚辰股份位置最低，VPD三星检验完成在即，新增10亿利润空间 - [15] 美谷MRAM两天暴涨100%，聚辰股份-A股唯一布局MRAM - [18] 长鑫科技IPO恢复问询，存储产业链共振，利好配套芯片 - [12] 聚辰股份VPD芯片送测三星，两倍做多CPU+存储逻辑">
+        <div class="stock-item-name">聚辰股份</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sh.688123</span>
+          <span class="stock-item-mc">301.0亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">48.9%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="绿色动力" data-code="sh.601330" data-mc="101.57152066" data-gm26="0.4827" data-intro="根据提供的资料，绿色动力（股票代码 sh.601330）是垃圾焚烧发电领域的运营企业，具备显著的价值特征。  首先，从财务与运营指标看，绿色动力的**分红比例高达74%**，处于板块前列，且国补回款率超过100%，显示出优异的现金流回收能力。在业务增长方面，公司供热增速达到+99%，位居行业第一，体现了非电可再生价值的快速释放。此外，若AI技术全面铺开，有望为绿色动力带来约14%的盈利弹性，效率提升空间可观。  在行业地位方面，东吴环保将绿色动力列为重点推荐个股，认为其受益于垃圾发电行业“toB进化（享受清洁能源价值重估）”与“toC进化（分红能力三倍提升空间）”的双重逻辑。公司凭借特许经营权壁垒，在成本稳定、收益确定的模式下实现ROE稳定提升，同时具备炉渣涨价、算电一体化及出海等潜在增长点。  综合来看，绿色动力作为垃圾焚烧运营龙头，兼具高分红、高增长（供热、AI赋能）和现金流改善等多重价值驱动因素。  ### References  - [8] 东吴环保：垃圾焚烧行业ROE与分红双提升，AI赋能与出海打开三年翻倍空">
+        <div class="stock-item-name">绿色动力</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sh.601330</span>
+          <span class="stock-item-mc">101.6亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">48.3%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="钧崴电子" data-code="sz.301458" data-mc="168.85335444" data-gm26="0.4755" data-intro="钧崴电子（股票代码：301458.SZ）是一家专注于电流感测精密电阻的龙头企业，其核心价值体现在行业地位、客户绑定、产品升级及下游需求爆发等多个方面。  ### 行业地位  钧崴电子是国内第一、全球前三的电流感测精密电阻制造商，被市场评价为“大陆电阻龙头”。在电阻产业链中，其高端电流感测电阻及合金分流器产品具有显著的竞争优势，并被华泰电子等机构列为重点关注对象。  ### 深度绑定英伟达  钧崴电子已纳入英伟达电阻核心供应商体系，是英伟达GPU与电源管理核心元器件的大陆唯一供应商。随着英伟达下一代 Rubin 平台功耗从 Hopper 的 700W 飙升至 1800W 以上，供电架构由 VPD 分布式供电重构，VRM 供电相数成倍增加，每一路都需要独立的高精度合金分流器。这导致单机柜内电阻用量翻倍，且高端电阻单价因性能升级而翻 5-6 倍，实现“量价齐升”的双击效应。从 NVL72 升级至 NVL576 时，合金分流器总价值放大 35.68 倍，涨幅断层领先电容和电感。  ### 受益于AIPC增量  除AI服务器外，英伟达于2026年6月发布的 RTX Spark（N1X）AIPC 超级芯片也将为钧崴电子带来精密电阻增量需求，进一步拓宽其业绩增长空间。  ### 市场预期与业绩弹性  在被动元件板块中，钧崴电子此前涨幅严重滞后，但 Rubin 架构带来的需求数倍增长以及 AIPC 的催化，使其业绩弹性明确。MLCC 缺货潮背景下，电阻作为配套器件也面临涨价机遇，钧崴电子作为大陆电阻龙头有望充分受益。  ### 参考文献  - [1] 47816 - [2] 48627 - [3] 33962 - [4] 21459">
+        <div class="stock-item-name">钧崴电子</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sz.301458</span>
+          <span class="stock-item-mc">168.9亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">47.5%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="固高科技" data-code="sz.301510" data-mc="125.20313" data-gm26="0.4722" data-intro="根据所提供的资料，固高科技（sz.301510）是一家在运动控制及机器人技术领域占据高地位的公司。它被申万机器人明确列为通用复苏线工控领域的建议关注标的之一，显示出其在行业内的认可度。  该公司的核心价值体现在其受益于当前工业领域的通用复苏趋势。根据申万机器人的分析，2026年以来下游需求回暖，PMI指数处于扩张区间，机床销量和工业机器人产量均实现显著增长。这些指标反映出下游资本开支意愿修复，扩产及设备更新需求正在释放，同时伺服、控制器等工控公司陆续发布涨价函也印证了下游需求向好。在这样的宏观背景下，固高科技作为工控领域的核心标的，其业务发展有望受益于这一复苏周期。  此外，固高科技在运控领域的高地位还体现在其作为行业对标目标的价值。例如，凌臣科技在运控领域就将其作为对标对象，这从侧面反映了固高科技在运动控制产业链中的标杆地位。  ### References  - [1] 31580 - [3] 31581">
+        <div class="stock-item-name">固高科技</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sz.301510</span>
+          <span class="stock-item-mc">125.2亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">47.2%</span>
+        </div>
+      </div>
+    <div class="stock-item" data-name="影石创新" data-code="sh.688775" data-mc="528.7185" data-gm26="0.452" data-intro="根据现有信息，影石创新（股票代码 sh.688775）是一家专注于**端侧AI和消费电子领域**的公司，被市场视为具有高成长潜力的标的。以下是其核心情况与价值分析：  ## 公司基本面与新品催化 影石创新预计在**6月发布Luna新品**，该产品属于云台相机品类，市场空间广阔（千万台规模），行业增速超过50%。公司具备强大的产品创新能力（如可拆卸设计），并通过**大众向明星代言人（李现等）** 强化营销，有望推动新品成功出圈。不过，公司也面临**6月首次大额解禁**的短期波动风险，但多数股东坚定看好其中长期价值。  ## AI与品类拓展 公司被视为具备**AI应用期权价值**（如AI视频等），并且端侧AI品类拓展空间广阔，可能涵盖**无人机、智能眼镜**等领域。其创新能力被市场高度认可，是视涯科技的核心客户之一。  ## 估值对比 从财务数据看，保守预计2026年营收150-180亿元，2027年营收250亿元，对应2026/2027年PS仅约**4倍/2.7倍**。对比海外端侧AI明星项目Oura（智能健康戒指，未上市）2026年6-8倍PS，影石创新当前估值显著低估。中信电子认为，相比端侧AI品类，公司价值被明显低估，上行空间广阔。  ## 投资逻辑 机构观点认为，影石创新是“高赔率&高胜率”的标的，尽管短期解禁可能影响股价，但长期价值回归确定性较强，千亿甚至两千亿市值仅是时间问题。  ###  References  - [1] 36386">
+        <div class="stock-item-name">影石创新</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">sh.688775</span>
+          <span class="stock-item-mc">528.7亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">45.2%</span>
+        </div>
+      </div>
+      </div>
+    </div>
+    <div class="detail-panel" id="detailPanel">
+      <div class="detail-empty">
+        <div class="detail-empty-icon">📋</div>
+        <div class="detail-empty-text">从左侧列表选择一只股票查看详情</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+  function parseMarkdown(text) {
+    if (!text) return '';
+    let html = text;
+    html = html.replace(/```([\s\S]*?)```/g, (_, code) => `<pre style="background:rgba(255,255,255,0.05);border-radius:6px;padding:8px;font-size:12px;overflow-x:auto;margin:8px 0;"><code>${code.trim()}</code></pre>`);
+    html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+    html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+    html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+    html = html.replace(/^---$/gm, '<hr>');
+    html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/(?<!\*)\*([^*\n]+?)\*(?!\*)/g, '<em>$1</em>');
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+    html = html.replace(/^(- .+(?:\n- .+)*)/gm, (match) => {
+      const items = match.split('\n').filter(l => l.startsWith('- ')).map(l => `<li>${l.slice(2)}</li>`).join('');
+      return `<ul>${items}</ul>`;
+    });
+    html = html.replace(/^(\d+\. .+(?:\n\d+\. .+)*)/gm, (match) => {
+      const items = match.split('\n').filter(l => /^\d+\./.test(l)).map(l => `<li>${l.replace(/^\d+\. /, '')}</li>`).join('');
+      return `<ol>${items}</ol>`;
+    });
+    const refMatch = html.match(/^### References\s*^((?:[*\-]\s*[^\n]+\n?)+)/m);
+    if (refMatch) {
+      const itemsHtml = refMatch[1].split('\n').filter(l => /^[*\-]\s*/.test(l)).map(l => `<div class="ref-item">${l.replace(/^[*\-]\s*/, '')}</div>`).join('');
+      const refBlock = `<div class="ref-block"><div class="ref-title">References</div>${itemsHtml}</div>`;
+      html = html.replace(/^### References\s*^((?:[*\-]\s*[^\n]+\n?)+)/m, refBlock);
+    }
+    const lines2 = html.split('\n');
+    const out = [];
+    let i = 0;
+    while (i < lines2.length) {
+      const line = lines2[i];
+      const trimmed = line.trim();
+      if (!trimmed) { i++; continue; }
+      if (/^<(h[1-6]|ul|ol|li|blockquote|pre|hr|div|section|p)/i.test(trimmed)) {
+        out.push(line);
+        i++;
+        continue;
+      }
+      const para = [line];
+      i++;
+      while (i < lines2.length) {
+        const next = lines2[i];
+        const nextTrimmed = next.trim();
+        if (!nextTrimmed) break;
+        if (/^<(h[1-6]|ul|ol|li|blockquote|pre|hr|div|section|p)/i.test(nextTrimmed)) break;
+        para.push(next);
+        i++;
+      }
+      out.push(`<p>${para.join(' ')}</p>`);
+    }
+    html = out.join('\n');
+    html = html.replace(/<\/blockquote>\n<blockquote>/g, '\n');
+    html = html.replace(/<p><\/p>/g, '');
+    return html;
+  }
+
+  let searchKeyword = '';
+  let selectedCode = null;
+  let currentSort = 'gm';
+
+  function getSortedItems() {
+    const items = allStocks.filter(s => {
+      const kw = searchKeyword.toLowerCase();
+      return !kw || s.name.toLowerCase().includes(kw) || s.code.toLowerCase().includes(kw);
+    });
+    if (currentSort === 'gm') {
+      return items.sort((a, b) => b.gm26 - a.gm26);
+    } else {
+      return items.sort((a, b) => b.mc - a.mc);
+    }
+  }
+
+  function renderStockList() {
+    const items = getSortedItems();
+    const container = document.querySelector('.stock-items');
+    if (items.length === 0) {
+      container.innerHTML = '<div class="stock-empty">未找到匹配结果</div>';
+      return;
+    }
+    container.innerHTML = items.map(s => `
+      <div class="stock-item" data-name="${s.name}" data-code="${s.code}" data-mc="${s.mc}" data-gm26="${s.gm26}" data-intro="${s.intro}">
+        <div class="stock-item-name">${s.name}</div>
+        <div class="stock-item-meta">
+          <span class="stock-item-code">${s.code}</span>
+          <span class="stock-item-mc">${s.mc.toFixed(1)}亿</span>
+        </div>
+        <div class="stock-item-gm-row">
+          <span class="stock-item-gm">${(s.gm26 * 100).toFixed(1)}%</span>
+        </div>
+      </div>
+    `).join('');
+    container.querySelectorAll('.stock-item').forEach(item => {
+      item.addEventListener('click', () => {
+        container.querySelectorAll('.stock-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        selectedCode = item.dataset.code;
+        showDetail(item.dataset);
+      });
+    });
+    const first = container.querySelector('.stock-item');
+    if (first && !selectedCode) {
+      first.classList.add('active');
+      showDetail(first.dataset);
+    } else if (selectedCode) {
+      const prev = container.querySelector('[data-code="' + selectedCode + '"]');
+      if (prev) { prev.classList.add('active'); showDetail(prev.dataset); }
+    }
+  }
+
+  function showDetail(d) {
+    const panel = document.getElementById('detailPanel');
+    const gm26 = parseFloat(d.gm26);
+    const mc = parseFloat(d.mc);
+    const introHtml = parseMarkdown(d.intro);
+    panel.innerHTML = `
+      <div class="detail-header">
+        <div>
+          <div class="detail-title">${d.name}</div>
+          <div class="detail-code">${d.code}</div>
+        </div>
+      </div>
+      <div class="detail-mc-row">
+        <span class="detail-mc-value">${mc.toFixed(1)} 亿市值</span>
+        <span class="detail-gm-value">毛利率 ${(gm26 * 100).toFixed(1)}%</span>
+      </div>
+      <div class="back-intro">${introHtml}</div>
+    `;
+  }
+
+  document.querySelector('.stock-search').addEventListener('input', e => {
+    searchKeyword = e.target.value;
+    selectedCode = null;
+    renderStockList();
+  });
+
+  document.querySelector('.sort-tabs').addEventListener('click', e => {
+    const tab = e.target.closest('.sort-tab');
+    if (!tab) return;
+    document.querySelectorAll('.sort-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentSort = tab.dataset.sort;
+    renderStockList();
+  });
+
+  const allStocks = [];
+  document.querySelectorAll('.stock-item').forEach(item => {
+    const dd = item.dataset;
+    allStocks.push({
+      name: dd.name, code: dd.code,
+      mc: parseFloat(dd.mc), gm26: parseFloat(dd.gm26), intro: dd.intro
+    });
+  });
+  renderStockList();
+</script>
+</body>
+</html>

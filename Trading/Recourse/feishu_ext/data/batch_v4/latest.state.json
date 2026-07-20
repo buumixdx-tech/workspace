@@ -1,0 +1,13 @@
+{
+  "since": "2026-06-29 15:00:00",
+  "until": "2026-06-30 12:30:00",
+  "phase": "submit",
+  "jsonl_path": "D:\\workspace\\LightRAG\\apps\\feishu_preprocess\\data\\batch_v4\\20260630_131316.jsonl",
+  "state_path": "D:\\workspace\\LightRAG\\apps\\feishu_preprocess\\data\\batch_v4\\20260630_131316.state.json",
+  "results_path": "D:\\workspace\\LightRAG\\apps\\feishu_preprocess\\data\\batch_v4\\20260630_131316.results.json",
+  "record_count": 5,
+  "model": "qwen3.5-flash",
+  "input_file_id": "file-batch-f2875cb1f97643108c6d7b6c",
+  "batch_id": "batch_43bca672-b75d-4319-9aad-fef8b6481a47",
+  "submitted_at": "2026-06-30T13:13:26+08:00"
+}

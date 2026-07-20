@@ -1,0 +1,772 @@
+# modules/utils.py
+
+import pandas as pd
+import numpy as np
+import os
+from datetime import datetime, timedelta, date
+from clickhouse_driver import Client
+import re
+from typing import List, Dict, Any, Optional, Tuple, Union
+import yaml
+
+
+# ----------------------------
+# 工具函数：ClickHouse连接配置 (已根据要求修改用户名和密码)
+# ----------------------------
+def get_clickhouse_client():
+    """
+    创建并返回ClickHouse客户端
+    根据实际环境修改host, port, user, password
+    """
+    return Client(
+        host='localhost',
+        port=9000,
+        user='admin',           # 已修改为 admin
+        password='admin_password', # 已修改为 admin_password
+        database='stock_data',
+        settings={'use_numpy': True}
+    )
+
+
+# ----------------------------
+# 工具函数：读取针对策略的配置文件config.txt
+# ----------------------------
+def get_config_specified():
+    """
+    从config.txt读取回调幅度上下限和EndDate
+    """
+    # 默认配置
+    config = {
+        'lower_limit': 0.10,  # 默认10%
+        'upper_limit': 0.75,  # 默认75%
+        'end_date': None      # 默认None，表示使用最新交易日
+    }
+    if os.path.exists('config.txt'):
+        # print("正在读取 config.txt...") # 可根据需要开启/关闭详细日志
+        try:
+            # 显式指定 encoding='utf-8' 以避免编码问题
+            with open('config.txt', 'r', encoding='utf-8') as f:
+                # line_number = 0 # 可根据需要开启/关闭详细日志
+                for line in f:
+                    # line_number += 1 # 可根据需要开启/关闭详细日志
+                    # original_line = line # 可根据需要开启/关闭详细日志
+                    line = line.strip() # 去除首尾空白字符
+                    # print(f"  读取第 {line_number} 行: '{original_line.strip()}'") # 可根据需要开启/关闭详细日志
+                    if not line or ':' not in line: # 跳过空行和无冒号的行
+                        continue
+                    parts = line.split(':', 1) # 只分割一次
+                    key = parts[0].strip()
+                    value_raw = parts[1].strip()
+                    # print(f"    -> 解析 Key: '{key}', Value: '{value_raw}'") # 可根据需要开启/关闭详细日志
+                    if not value_raw:
+                         # print(f"    -> 警告：没有指定值，跳过") # 可根据需要开启/关闭详细日志
+                         continue
+                    # --- 简化处理 ---
+                    if key == 'lower_limit':
+                        if value_raw.endswith('%'):
+                            try:
+                                # 直接移除末尾的 '%' 并转换为小数
+                                percent_value = float(value_raw[:-1]) # 去掉最后一个字符 ('%')
+                                config['lower_limit'] = percent_value / 100.0
+                                # print(f"    -> 解析为小数: {config['lower_limit']}") # 可根据需要开启/关闭详细日志
+                            except ValueError:
+                                # print(f"    -> 警告：'{value_raw}' 不是有效的百分比格式，跳过。") # 可根据需要开启/关闭详细日志
+                                pass # 忽略无效值
+                        # else: # 可根据需要开启/关闭详细日志
+                            # print(f"    -> lower_limit 值 '{value_raw}' 必须以 '%' 结尾，跳过。") # 可根据需要开启/关闭详细日志
+                    elif key == 'upper_limit':
+                        if value_raw.endswith('%'):
+                            try:
+                                percent_value = float(value_raw[:-1])
+                                config['upper_limit'] = percent_value / 100.0
+                                # print(f"    -> 解析为小数: {config['upper_limit']}") # 可根据需要开启/关闭详细日志
+                            except ValueError:
+                                # print(f"    -> 警告：'{value_raw}' 不是有效的百分比格式，跳过。") # 可根据需要开启/关闭详细日志
+                                pass # 忽略无效值
+                        # else: # 可根据需要开启/关闭详细日志
+                            # print(f"    -> 警告：upper_limit 值 '{value_raw}' 必须以 '%' 结尾，跳过。") # 可根据需要开启/关闭详细日志
+                    elif key == 'end_date':
+                        if value_raw.isdigit() and len(value_raw) == 8:
+                            config['end_date'] = value_raw
+                            # print(f"    -> end_date: {config['end_date']}") # 可根据需要开启/关闭详细日志
+                        # else: # 可根据需要开启/关闭详细日志
+                           # print(f"    -> 警告：end_date 值 '{value_raw}' 格式不正确 (应为 YYYYMMDD)，跳过。") # 可根据需要开启/关闭详细日志
+                    # else: # 可根据需要开启/关闭详细日志
+                        # print(f"    -> 警告：未知的配置项 '{key}'，跳过。") # 可根据需要开启/关闭详细日志
+                    # --- 结束 ---
+        except Exception as e:
+            print(f"读取config.txt时发生错误，使用默认值: {str(e)}")
+            # import traceback
+            # traceback.print_exc() # 如需详细堆栈可取消注释
+    return config
+
+
+# ----------------------------
+# 工具函数：读取配置文件中的kv值
+# ----------------------------
+def get_config(config_path: str = 'config.txt') -> dict:
+    """
+    从指定的配置文件读取键值对配置项。
+    格式: key:value
+    Args:
+        config_path (str): 配置文件的路径。默认为 'config.txt'。
+    Returns:
+        dict: 包含所有配置项的字典。
+    """
+    config = {}
+    if os.path.exists(config_path):
+        # print(f"正在读取配置文件 {config_path}...") # 可根据需要开启/关闭详细日志
+        try:
+            # 显式指定 encoding='utf-8' 以避免编码问题
+            with open(config_path, 'r', encoding='utf-8') as f:
+                # line_number = 0 # 可根据需要开启/关闭详细日志
+                for line in f:
+                    # line_number += 1 # 可根据需要开启/关闭详细日志
+                    # original_line = line # 可根据需要开启/关闭详细日志
+                    line = line.strip() # 去除首尾空白字符
+                    # print(f"  读取第 {line_number} 行: '{original_line.strip()}'") # 可根据需要开启/关闭详细日志
+                    # 跳过空行
+                    if not line:
+                        # print(f"    -> 跳过空行") # 可根据需要开启/关闭详细日志
+                        continue
+                    # 查找第一个冒号 ':' 的位置
+                    colon_index = line.find(':')
+                    # 如果没有冒号或冒号在行首，则跳过该行
+                    if colon_index <= 0:
+                         # print(f"    -> 跳过：格式不正确或缺少Key") # 可根据需要开启/关闭详细日志
+                         continue
+                    # 提取 key 和 value
+                    key = line[:colon_index].strip()   # 冒号前的部分作为 key，并去除首尾空格
+                    value_raw = line[colon_index + 1:].strip() # 冒号后的部分作为 value，并去除首尾空格
+                    # print(f"    -> 解析 Key: '{key}', Value: '{value_raw}' (原始)") # 可根据需要开启/关闭详细日志
+                    # --- 处理百分比值 ---
+                    # 初始化最终存储的 value 为原始字符串
+                    processed_value = value_raw
+                    # 检查 value_raw 是否以 '%' 结尾
+                    if value_raw.endswith('%'):
+                        try:
+                            # 移除末尾的 '%' 并转换为浮点数
+                            percent_number = float(value_raw[:-1])
+                            # 转换为小数
+                            processed_value = percent_number / 100.0
+                            # print(f"    -> 检测到百分比，转换为小数: {processed_value}") # 可根据需要开启/关闭详细日志
+                        except ValueError:
+                            # 如果转换失败（例如 'abc%'），则保留原始字符串
+                            print(f"    -> 警告：无法将 '{value_raw}' 转换为百分比数字，将作为普通字符串处理。")
+                            # processed_value 保持为 value_raw
+                    # --- 结束百分比处理 ---
+                    # 将键值对存入字典
+                    config[key] = processed_value
+        except Exception as e:
+            print(f"读取配置文件 {config_path} 时发生错误: {e}")
+            # import traceback
+            # traceback.print_exc() # 如需详细堆栈可取消注释
+    # --- 打印读取到的配置值 ---
+    print(f"从 {config_path} 读取到的配置:") # 可根据需要开启/关闭详细日志
+    # for k, v in config.items(): # 可根据需要开启/关闭详细日志
+    #     print(f"  - {k}: {v}") # 可根据需要开启/关闭详细日志
+    # --- 结束 ---
+    return config
+
+
+# ----------------------------
+# 工具函数：从完整代码提取6位数字代码 (保留此函数用于匹配 stock_info_dict)
+# ----------------------------
+def extract_6digit_code(full_code: str) -> Optional[str]:
+    """
+    从 'sh.600000' 或 'sz.000001' 提取 '600000'
+    此函数仅用于从数据库代码匹配 AllA.xlsx 信息，不用于最终输出
+    """
+    match = re.search(r'\.(\d{6})$', full_code)
+    return match.group(1) if match else None
+
+
+# ----------------------------
+# 工具函数：加载股票信息
+# ----------------------------
+def load_stock_info() -> Dict[str, Dict[str, str]]:
+    """
+    从AllA.xlsx加载股票代码、名称和行业信息
+    AllA.xlsx 中的代码是纯6位数字
+    """
+    if not os.path.exists('AllA.xlsx'):
+        raise FileNotFoundError("找不到AllA.xlsx文件，请确保该文件与脚本在同一目录")
+    df_info = pd.read_excel('AllA.xlsx')
+    # 标准化股票代码为6位数字 (处理 = "000032" 这种格式)
+    df_info['股票代码'] = df_info['股票代码'].astype(str).str.replace(r'[^\d]', '', regex=True).str.zfill(6)
+    # 构建股票信息字典 (Key: 6位数字代码)
+    stock_info_dict = {}
+    for _, row in df_info.iterrows():
+        code = row['股票代码'] # 6位数字
+        name = str(row['股票简称']).strip().replace('Ａ', 'A')
+        industry = str(row['所属行业']).strip()
+        stock_info_dict[code] = {
+            '股票名称': name,
+            '行业': industry
+        }
+    return stock_info_dict
+
+
+# ----------------------------
+# 工具函数：获取 T 日 (新增/修改)
+# ----------------------------
+def get_t_date(client: Client, specified_end_date_str: str = None) -> str:
+    """
+    根据指定日期或最新日期获取 T 日。
+    Args:
+        client (Client): 已连接的ClickHouse客户端。
+        specified_end_date_str (str, optional): 配置文件中指定的结束日期 (YYYYMMDD)。
+    Returns:
+        str: T日的字符串 (YYYY-MM-DD)。
+             如果失败，则抛出异常。
+    """
+    print("正在获取交易日历并确定T日...")
+    try:
+        # 获取足够多的交易日用于确定T日 (最多回溯30天)
+        lookback_days = 30
+        if specified_end_date_str:
+            try:
+                end_date_for_query = datetime.strptime(specified_end_date_str, '%Y%m%d').date()
+            except ValueError as e:
+                print(f"配置文件中的 EndDate 格式错误 ({specified_end_date_str})，将忽略该设置: {e}")
+                # specified_end_date_str = datetime.now().date() # 这里不需要赋值，因为下面会用到默认值
+        else:
+            end_date_for_query = datetime.now().date()  
+        start_date_for_query = end_date_for_query - timedelta(days=lookback_days)
+        trading_calendar_query = """
+        SELECT date
+        FROM stock_data.index_k
+        WHERE code = 'sh.000001' AND date >= %(start_date)s AND date <= %(end_date)s
+        ORDER BY date DESC
+        """
+        trading_dates_result = client.execute(
+            trading_calendar_query,
+            {
+                'start_date': start_date_for_query.strftime('%Y-%m-%d'),
+                'end_date': end_date_for_query.strftime('%Y-%m-%d')
+            }
+        )
+        if not trading_dates_result:
+             raise Exception(f"交易日历中未找到任何交易日。")
+        # 处理 numpy.datetime64 类型并排序 (最新的在前)
+        raw_dates = [row[0] for row in trading_dates_result]
+        all_trading_dates = []
+        for d in raw_dates:
+            if isinstance(d, np.datetime64):
+                dt = pd.to_datetime(d).to_pydatetime()
+                all_trading_dates.append(dt.date() if hasattr(dt, 'date') else dt)
+            else:
+                all_trading_dates.append(d if not hasattr(d, 'date') else d.date())
+        all_trading_dates.sort(reverse=True) # 最新的在前
+        # --- 确定T日逻辑 ---
+        t_date = None
+        if specified_end_date_str:
+            try:
+                # 尝试将配置的日期字符串解析为 date 对象
+                specified_date = datetime.strptime(specified_end_date_str, '%Y%m%d').date()
+                print(f"配置文件指定了结束日期: {specified_date.strftime('%Y-%m-%d')}")
+                # 检查指定日期是否是交易日
+                if specified_date in all_trading_dates:
+                    t_date = specified_date
+                    print(f"指定日期 {t_date.strftime('%Y-%m-%d')} 是交易日，将作为T日。")
+                else:
+                    # 如果不是交易日，找到早于指定日期的最近一个交易日
+                    # all_trading_dates 是按日期降序排列的
+                    for trade_date in all_trading_dates:
+                        if trade_date < specified_date:
+                            t_date = trade_date
+                            break
+                    if t_date:
+                        print(f"指定日期 {specified_date.strftime('%Y-%m-%d')} 不是交易日，最近的交易日是 {t_date.strftime('%Y-%m-%d')}，将作为T日。")
+                    else:
+                        # 理论上不太可能，但如果回溯范围内没有更早的交易日
+                        t_date = all_trading_dates[0] # 使用最新的交易日
+                        print(f"在回溯范围内未找到早于指定日期的交易日，使用最新的交易日 {t_date.strftime('%Y-%m-%d')} 作为T日。")
+            except ValueError as e:
+                print(f"配置文件中的 EndDate 格式错误 ({specified_end_date_str})，将忽略该设置: {e}")
+                # specified_end_date_str = None # 重置，使用默认逻辑 - 不需要重置，因为是局部变量
+        # 如果没有指定日期或指定日期无效，则使用最新的交易日
+        if t_date is None:
+            t_date = all_trading_dates[0]
+            print(f"未指定有效结束日期，使用最新交易日 {t_date.strftime('%Y-%m-%d')} 作为T日。")
+        # --- 结束 ---
+        t_date_str = t_date.strftime('%Y-%m-%d') # T日
+        print(f"确定的T日为: {t_date_str}")
+        return t_date_str
+    except Exception as e:
+        print(f"获取交易日历或确定T日失败: {e}")
+        raise # 重新抛出异常，让调用者处理
+
+
+# ----------------------------
+# 工具函数：获取 T 日 和 T-n+1 日 (新增)
+# ----------------------------
+def get_n_before_T_date(client: Client, n: int, specified_end_date_str: str = None) -> Tuple[str, str]:
+    """
+    根据指定日期或最新日期获取 T 日，并返回 T 日 和 T-n+1 日 的字符串。
+    Args:
+        client (Client): 已连接的ClickHouse客户端。
+        n (int): 回溯的交易日天数 (n 必须大于 1)。
+        specified_end_date_str (str, optional): 配置文件中指定的结束日期 (YYYYMMDD)。
+    Returns:
+        tuple[str, str]: (T日字符串 YYYY-MM-DD, T-n+1日字符串 YYYY-MM-DD)。
+                         如果失败，则抛出异常。
+    """
+    if n <= 1:
+        raise ValueError("参数 n 必须大于 1。")
+    print(f"正在获取交易日历并确定T日及T-{n-1}日...")
+    try:
+        # 获取足够多的交易日用于确定T日 (最多回溯 n + 30 天)
+        lookback_days = n + 30 # 确保有足够的历史数据
+        if specified_end_date_str:
+            try:
+                end_date_for_query = datetime.strptime(specified_end_date_str, '%Y%m%d').date()
+            except ValueError as e:
+                print(f"配置文件中的 EndDate 格式错误 ({specified_end_date_str})，将忽略该设置: {e}")
+                # specified_end_date_str = datetime.now().date() # 这里不需要赋值，因为下面会用到默认值
+        else:
+            end_date_for_query = datetime.now().date()  
+        start_date_for_query = end_date_for_query - timedelta(days=lookback_days)
+        trading_calendar_query = """
+        SELECT date
+        FROM stock_data.index_k
+        WHERE code = 'sh.000001' AND date >= %(start_date)s AND date <= %(end_date)s
+        ORDER BY date DESC
+        """
+        trading_dates_result = client.execute(
+            trading_calendar_query,
+            {
+                'start_date': start_date_for_query.strftime('%Y-%m-%d'),
+                'end_date': end_date_for_query.strftime('%Y-%m-%d')
+            }
+        )
+        if not trading_dates_result:
+             raise Exception(f"交易日历中未找到任何交易日。")
+        # 处理 numpy.datetime64 类型并排序 (最新的在前)
+        raw_dates = [row[0] for row in trading_dates_result]
+        all_trading_dates = []
+        for d in raw_dates:
+            if isinstance(d, np.datetime64):
+                dt = pd.to_datetime(d).to_pydatetime()
+                all_trading_dates.append(dt.date() if hasattr(dt, 'date') else dt)
+            else:
+                all_trading_dates.append(d if not hasattr(d, 'date') else d.date())
+        all_trading_dates.sort(reverse=True) # 最新的在前
+        # --- 确定T日逻辑 (与 get_t_date 相同) ---
+        t_date = None
+        if specified_end_date_str:
+            try:
+                specified_date = datetime.strptime(specified_end_date_str, '%Y%m%d').date()
+                print(f"配置文件指定了结束日期: {specified_date.strftime('%Y-%m-%d')}")
+                if specified_date in all_trading_dates:
+                    t_date = specified_date
+                    print(f"指定日期 {t_date.strftime('%Y-%m-%d')} 是交易日，将作为T日。")
+                else:
+                    for trade_date in all_trading_dates:
+                        if trade_date < specified_date:
+                            t_date = trade_date
+                            break
+                    if t_date:
+                        print(f"指定日期 {specified_date.strftime('%Y-%m-%d')} 不是交易日，最近的交易日是 {t_date.strftime('%Y-%m-%d')}，将作为T日。")
+                    else:
+                        t_date = all_trading_dates[0]
+                        print(f"在回溯范围内未找到早于指定日期的交易日，使用最新的交易日 {t_date.strftime('%Y-%m-%d')} 作为T日。")
+            except ValueError as e:
+                print(f"配置文件中的 EndDate 格式错误 ({specified_end_date_str})，将忽略该设置: {e}")
+        if t_date is None:
+            t_date = all_trading_dates[0]
+            print(f"未指定有效结束日期，使用最新交易日 {t_date.strftime('%Y-%m-%d')} 作为T日。")
+        # --- 结束T日确定 ---
+        # --- 确定 T-n+1 日逻辑 ---
+        # 从 all_trading_dates 中找到 t_date 及之前的所有交易日
+        relevant_trading_dates = [d for d in all_trading_dates if d <= t_date]
+        relevant_trading_dates.sort() # 升序排列
+        if len(relevant_trading_dates) < n:
+             raise Exception(f"在T日({t_date})之前只找到 {len(relevant_trading_dates)} 个交易日，不足{n}个。")
+        # 取最后 n 个
+        final_trading_dates = relevant_trading_dates[-n:]
+        t_n_minus_1_date = final_trading_dates[0]   # T-n+1 日 (例如 n=6, 则是 T-5)
+        # --- 结束 T-n+1 日确定 ---
+        # 打印确认后的日期范围
+        t_date_str = t_date.strftime('%Y-%m-%d') # T日
+        t_n_minus_1_date_str = t_n_minus_1_date.strftime('%Y-%m-%d') # T-n+1日
+        print(f"确定的最近{n}个交易日: {[d.strftime('%Y-%m-%d') for d in final_trading_dates]}")
+        print(f"实际分析日期范围: {t_n_minus_1_date_str} 至 {t_date_str}")
+        return t_date_str, t_n_minus_1_date_str
+    except Exception as e:
+        print(f"获取交易日历或确定T日/T-{n-1}日失败: {e}")
+        raise # 重新抛出异常，让调用者处理
+
+
+# ----------------------------
+# 工具函数：获取交易日历
+# ----------------------------
+def fetch_trading_calendar(
+    client: Client,
+    start_date_str: str = None, 
+    end_date_str: str = None
+) -> List[str]: 
+    """
+    获取指定指数的交易日历。
+    Args:
+        client (Client): ClickHouse客户端。
+        index_code (str): 用作交易日历的指数代码。
+        start_date_str (str, optional): 查询开始日期 (YYYYMMDD 格式)。
+        end_date_str (str, optional): 查询结束日期 (YYYYMMDD 格式)。
+    Returns:
+        List[str]: 交易日列表 (按日期升序排列)，每个日期为 YYYYMMDD 格式的字符串。
+    """
+    query = "SELECT date FROM stock_data.index_k WHERE code = %(index_code)s"
+    params = {'index_code': 'sh.000001'}
+    # 处理开始日期参数
+    if start_date_str:
+        # 验证输入格式 (可选但推荐)
+        if not (isinstance(start_date_str, str) and len(start_date_str) == 8 and start_date_str.isdigit()):
+             print(f"警告：start_date_str '{start_date_str}' 格式不正确，应为 YYYYMMDD。")
+        query += " AND date >= %(start_date)s"
+        # 假设输入是 YYYYMMDD 字符串，直接使用或转换为 YYYY-MM-DD
+        # ClickHouse 的 Date 类型通常接受 'YYYY-MM-DD' 格式
+        try:
+            dt_obj = datetime.strptime(start_date_str, '%Y%m%d')
+            params['start_date'] = dt_obj.strftime('%Y-%m-%d')
+        except ValueError:
+            print(f"警告：start_date_str '{start_date_str}' 无法解析为日期。")
+    # 处理结束日期参数
+    if end_date_str:
+        # 验证输入格式 (可选但推荐)
+        if not (isinstance(end_date_str, str) and len(end_date_str) == 8 and end_date_str.isdigit()):
+             print(f"警告：end_date_str '{end_date_str}' 格式不正确，应为 YYYYMMDD。")
+        query += " AND date <= %(end_date)s"
+        # 假设输入是 YYYYMMDD 字符串，直接使用或转换为 YYYY-MM-DD
+        try:
+            dt_obj = datetime.strptime(end_date_str, '%Y%m%d')
+            params['end_date'] = dt_obj.strftime('%Y-%m-%d')
+        except ValueError:
+            print(f"警告：end_date_str '{end_date_str}' 无法解析为日期。")
+    query += " ORDER BY date"
+    try:
+        results = client.execute(query, params)
+        # 将 numpy.datetime64 或 date 对象转换为 YYYYMMDD 格式的字符串
+        trading_dates_str_list = []
+        print("获取到的交易日列表:")
+        for row in results:
+            dt_obj = row[0] # 获取 date 或 datetime 对象
+            # 确保是 datetime/date 对象，然后格式化
+            if isinstance(dt_obj, (date, datetime)):
+                date_str = dt_obj.strftime('%Y%m%d')
+            else:
+                # 如果是 numpy.datetime64，先转换
+                try:
+                    date_str = pd.to_datetime(dt_obj).strftime('%Y%m%d')
+                    # print(f"是numpy.datetime64")
+                except Exception as convert_e:
+                    print(f"警告：无法转换日期对象 {dt_obj}，跳过。错误: {convert_e}")
+                    continue # 跳过无法转换的日期
+            # print(f"  {date_str}")
+            trading_dates_str_list.append(date_str)
+        return trading_dates_str_list
+    except Exception as e:
+        print(f"获取交易日历失败: {e}")
+        return []
+
+# ----------------------------
+# 工具函数：按照日期查询股票行情数据
+# ----------------------------
+def fetch_stock_data_for_date(
+    client: Client, 
+    target_date: Union[datetime.date, str], 
+    stock_codes: List[str]
+) -> List[Dict[str, Any]]:
+    """
+    从ClickHouse数据库获取指定日期的一组股票的日K线数据。
+
+    Args:
+        client (Client): 已连接的 ClickHouse 客户端。
+        target_date (Union[datetime.date, str]): 目标交易日日期。
+                                                     如果是字符串，应为 'YYYY-MM-DD' 或 'YYYYMMDD' 格式。
+        stock_codes (List[str]): 股票代码列表。
+
+    Returns:
+        List[Dict[str, Any]]: 查询结果列表。每个元素是一个字典，
+                               包含 'code', 'date', 'open', 'high', 'low', 'close',
+                               'preclose', 'volume', 'amount', 'turn', 'tradestatus', 'isST', 'adjustflag' 等字段。
+                               如果某只股票在该日期没有数据，则不包含在返回列表中。
+                               如果查询失败，可能抛出异常。
+    """
+    if not stock_codes:
+        return []
+    print(f"    [DEBUG]utils: before isinstance")
+    # 1. 格式化日期
+    if isinstance(target_date, datetime.date):
+        date_str = target_date.strftime('%Y-%m-%d')
+        
+    elif isinstance(target_date, str):
+        # 尝试解析不同格式的日期字符串
+        print(f"    [DEBUG]utils: target_date is str")
+        try:
+            # 假设是 'YYYY-MM-DD'
+            date_obj = datetime.datetime.strptime(target_date, '%Y-%m-%d').date()
+            print(f"    [DEBUG]utils: target_date is YYYY-MM-DD")
+        except ValueError:
+            try:
+                # 假设是 'YYYYMMDD'
+                date_obj = datetime.datetime.strptime(target_date, '%Y%m%d').date()
+            except ValueError:
+                raise ValueError(f"无法解析日期字符串 '{target_date}'，请使用 'YYYY-MM-DD' 或 'YYYYMMDD' 格式。")
+        date_str = date_obj.strftime('%Y-%m-%d')
+    else:
+        raise TypeError("target_date 必须是 datetime.date 对象或字符串。")
+
+    # 2. 准备 SQL 查询
+    # 使用参数化查询可以提高安全性，但 clickhouse-driver 对 IN 列表的参数化支持可能有限
+    # 这里采用拼接方式，但对输入进行了处理
+    # 确保 stock_codes 中的代码是字符串并去除空格
+    cleaned_codes = [str(code).strip() for code in stock_codes if code]
+    
+    if not cleaned_codes:
+        return []
+
+    # 为每个代码添加引号以防止SQL注入（基础防护）
+    quoted_codes = [f"'{code}'" for code in cleaned_codes]
+    codes_placeholder = ', '.join(quoted_codes)
+
+    query = f"""
+        SELECT 
+            code, 
+            date, 
+            open, 
+            high, 
+            low, 
+            close, 
+            preclose, 
+            volume, 
+            amount, 
+            turn, 
+            tradestatus, 
+            isST, 
+            adjustflag
+        FROM 
+            stock_data.daily_k
+        WHERE 
+            date = '{date_str}' 
+            AND code IN ({codes_placeholder})
+    """
+    # 注意：上面的日期和代码列表是直接拼接的，因为它们已经过处理和引号包围。
+    # 在生产环境中，应考虑更严格的输入验证或使用支持此类参数的库功能。
+
+    # 3. 执行查询
+    try:
+        # client.execute 返回一个元组列表
+        rows = client.execute(query)
+        
+        # 4. 处理结果
+        # 定义列名，与 SELECT 顺序一致
+        column_names = [
+            'code', 'date', 'open', 'high', 'low', 'close', 
+            'preclose', 'volume', 'amount', 'turn', 'tradestatus', 'isST', 'adjustflag'
+        ]
+        
+        result = []
+        for row in rows:
+            # 将每一行元组转换为字典
+            # 假设返回的 date 是 datetime.date 对象
+            row_dict = dict(zip(column_names, row))
+            result.append(row_dict)
+            
+        return result
+
+    except Exception as e:
+        print(f"[ERROR] 查询 {date_str} 的股票数据失败: {e}")
+        # 根据需要决定是返回空列表还是重新抛出异常
+        # 这里选择重新抛出，让调用者决定如何处理
+        raise 
+
+# ----------------------------
+# 新增工具函数：保存交易日历到 CSV 文件
+# ----------------------------
+def save_trading_calendar_to_csv(
+    client: Client, 
+    output_path: str = "data/trading_calendar.csv",
+    start_date_str: str = None,
+    end_date_str: str = None
+):
+    """
+    获取交易日历并保存到 CSV 文件。
+
+    Args:
+        client (Client): 已连接的 ClickHouse 客户端。
+        output_path (str): 输出 CSV 文件的路径。默认为 "data/trading_calendar.csv"。
+        start_date_str (str, optional): 查询开始日期 (YYYYMMDD 格式)。
+        end_date_str (str, optional): 查询结束日期 (YYYYMMDD 格式)。
+    """
+
+    try:
+        print(f"正在获取交易日历数据...")
+        # 1. 调用 fetch_trading_calendar 获取数据
+        trading_dates_list = fetch_trading_calendar(
+            client, 
+            start_date_str=start_date_str, 
+            end_date_str=end_date_str
+        )
+
+        if not trading_dates_list:
+            print("警告：获取到的交易日历为空，将创建空的 CSV 文件。")
+            # 创建一个空的 DataFrame，但仍包含列名
+            df_calendar = pd.DataFrame(columns=['date'])
+        else:
+            # 2. 将 YYYYMMDD 字符串列表转换为 DataFrame
+            # fetch_trading_calendar 返回的是 YYYYMMDD 格式的字符串列表
+            df_calendar = pd.DataFrame({'date': trading_dates_list})
+            print(f"获取到 {len(df_calendar)} 个交易日的数据。")
+
+        # 3. 确保输出目录存在
+        output_dir = os.path.dirname(output_path)
+        if output_dir and not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+            print(f"已创建目录: {output_dir}")
+
+        # 4. 保存到 CSV 文件
+        df_calendar.to_csv(output_path, index=False)
+        print(f"交易日历已成功保存至: {output_path}")
+
+    except Exception as e:
+        print(f"保存交易日历到 CSV 文件时出错: {e}")
+        raise # 重新抛出异常，让调用者知道发生了错误
+
+# ----------------------------
+# 原有工具函数：加载交易日历 (CSV)
+# ----------------------------
+def load_trading_calendar() -> List[str]:
+    """
+    加载交易日历
+    
+    Returns:
+        交易日列表 (YYYYMMDD 字符串)
+    """
+    calendar_path = "data/trading_calendar.csv"
+    if os.path.exists(calendar_path):
+        df = pd.read_csv(calendar_path)
+        
+        # --- 关键修改：强制转换为字符串 ---
+        # 确保 'date' 列是字符串类型。
+        # fillna('') 处理可能的 NaN 值。
+        # astype(str) 将所有元素（包括 int64）转换为字符串。
+        df['date'] = df['date'].fillna('').astype(str)
+        
+        # 可选：过滤掉可能的空字符串（如果原始CSV中有空行）
+        df = df[df['date'] != '']
+        
+        # 返回字符串列表
+        return df['date'].tolist()
+    else:
+        # 如果没有交易日历文件，返回示例数据 (确保是字符串)
+        print(f"警告: 未找到交易日历文件 {calendar_path}，使用示例日期。")
+        return ["20240102", "20240103", "20240104", "20240105", "20240106"]
+
+
+# ----------------------------
+# 原有工具函数：加载市场数据 (CSV)
+# ----------------------------
+def load_market_data(date: str) -> Dict[str, Dict[str, Any]]:
+    """
+    加载指定日期的市场数据
+    
+    Args:
+        date: 日期字符串 (YYYY-MM-DD)
+        
+    Returns:
+        股票市场数据字典
+    """
+    file_path = f"data/market_data/market_data_{date.replace('-', '')}.csv"
+    if not os.path.exists(file_path):
+        return {}
+    
+    df = pd.read_csv(file_path)
+    market_data = {}
+    
+    for _, row in df.iterrows():
+        stock = row['stock']
+        market_data[stock] = {
+            'open': row['open'],
+            'close': row['close'],
+            'high': row['high'],
+            'low': row['low'],
+            'volume': row['volume'],
+            'suspended': row.get('suspended', False)
+        }
+    
+    return market_data
+
+
+# ----------------------------
+# 原有工具函数：加载选股清单 (CSV)
+# ----------------------------
+def load_selected_stocks(date: str) -> List[str]:
+    """
+    加载指定日期的选股清单
+    
+    Args:
+        date: 日期字符串 (YYYY-MM-DD)
+        
+    Returns:
+        股票代码列表
+    """
+    file_path = f"data/stock_lists/stock_list_{date.replace('-', '')}.csv"
+    if not os.path.exists(file_path):
+        return []
+    
+    df = pd.read_csv(file_path)
+    return df['stock'].tolist()
+
+
+# ----------------------------
+# 原有工具函数：获取未来N个交易日
+# ----------------------------
+def get_next_n_trading_days(start_date: str, n: int, trading_calendar: List[str]) -> str:
+    """
+    获取从start_date开始的第n个交易日
+    
+    Args:
+        start_date: 起始日期
+        n: 天数
+        trading_calendar: 交易日历
+        
+    Returns:
+        第n个交易日
+    """
+    try:
+        start_idx = trading_calendar.index(start_date)
+        return trading_calendar[start_idx + n]
+    except (ValueError, IndexError):
+        return None
+
+
+# ----------------------------
+# 工具函数：加载策略配置文件 (YAML)
+# ----------------------------
+def load_config(config_path: str) -> Dict[str, Any]:
+    """
+    加载策略配置文件 (YAML)
+    
+    Args:
+        config_path: 配置文件路径
+        
+    Returns:
+        配置字典
+    """
+    with open(config_path, 'r', encoding='utf-8') as file:
+        config = yaml.safe_load(file)
+    return config
+
+
+def get_strategy_config(config: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    获取策略配置
+    
+    Args:
+        config: 完整配置字典
+        
+    Returns:
+        策略配置字典
+    """
+    return config.get('strategy', {})

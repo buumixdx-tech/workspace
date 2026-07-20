@@ -1,0 +1,44 @@
+[clickhouse]
+host = "127.0.0.1"
+port = 8123
+user = "admin"
+password = "admin_password"
+database = "stock_data"
+
+[etl]
+# 并发控制
+max_workers = 1
+# Baostock 账号
+bs_user = ""
+bs_pass = ""
+# 每次批量写入的行数
+batch_size = 5000
+
+# eltdx (通达信协议) 数据源配置
+# 服务器列表：使用 IP:PORT 格式，多个备选
+tdx_hosts = [
+    "60.12.136.250:7709",
+    "115.238.56.198:7709",
+    "180.153.18.170:7709",
+    "123.125.108.14:7709",
+]
+# 连接池大小 (每个 host 的并发连接数)
+tdx_pool_size = 2
+
+[ui]
+default_view_start_date = "2025-01-01"
+theme = "light"
+
+# 维护的指数列表 (只更新这些指数的K线数据)
+[indices]
+maintained = [
+    "sh.000001",  # 上证指数
+    "sh.000016",  # 上证50
+    "sh.000300",  # 沪深300
+    "sh.000905",  # 中证500
+    "sh.000852",  # 中证1000
+    "sz.000510",  # 中证A500
+    "sz.399006",  # 创业板指
+    "sz.000688",  # 科创50
+    "sz.399001",  # 深证成指
+]

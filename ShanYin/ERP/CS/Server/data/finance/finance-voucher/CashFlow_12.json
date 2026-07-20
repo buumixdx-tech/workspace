@@ -1,0 +1,21 @@
+{
+  "voucher_no": "CSH-12-F2099E",
+  "ref_vc_id": 19,
+  "ref_type": "CashFlow",
+  "ref_id": 12,
+  "timestamp": "2026-05-17T00:00:00",
+  "entries": [
+    {
+      "account": "应付账款 (供应商) - 应付账款 (供应商) - 浙江斯贝乐",
+      "debit": 40000.0,
+      "credit": 0.0,
+      "summary": "核销应付"
+    },
+    {
+      "account": "货币资金 - 货币资金 - 中国银行天津凯旋支行 (5749)",
+      "debit": 0,
+      "credit": 40000.0,
+      "summary": "支付资金 (履约)"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+[Unit]
+Description=Articles Flask service for buumicloud.com.cn/articles
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/articles
+Environment="PATH=/usr/bin:/usr/local/bin"
+EnvironmentFile=/opt/articles/.env
+ExecStart=/usr/bin/python3 /opt/articles/app.py
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/articles.log
+StandardError=append:/var/log/articles.err.log
+
+[Install]
+WantedBy=multi-user.target

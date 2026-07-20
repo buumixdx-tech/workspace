@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会议室灯泡管理后台</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="db.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            padding: 20px;
+            height: 100vh;
+        }
+
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .login-title {
+            text-align: center;
+            color: #2d8cf0;
+            margin-bottom: 30px;
+            font-size: 22px;
+        }
+
+        .login-form-item {
+            margin-bottom: 20px;
+        }
+
+        .login-form-item label {
+            display: block;
+            margin-bottom: 6px;
+            color: #333;
+        }
+
+        .login-form-item input, .login-form-item select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .login-btn {
+            width: 100%;
+            background: #2d8cf0;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .title {
+            color: #2d8cf0;
+            font-size: 24px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logout-btn {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .tab-box {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .tab {
+            padding: 8px 16px;
+            background: #f5f7fa;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .tab.active {
+            background: #2d8cf0;
+            color: white;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .form-item {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .btn {
+            background: #2d8cf0;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .btn-success {
+            background: #00c48c;
+        }
+
+        .btn-warning {
+            background: #ffa502;
+        }
+
+        .btn-danger {
+            background: #ff4757;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .table th, .table td {
+            border: 1px solid #eee;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .table th {
+            background: #f5f7fa;
+        }
+
+        .stock-card {
+            background: #e8f3ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .msg-box {
+            background: #f0f9ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #2d8cf0;
+        }
+
+        .admin-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .admin-form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .admin-form-row .form-item {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .io-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .io-btn-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 登录页面 -->
+    <div class="login-container" id="loginBox">
+        <h2 class="login-title">会议室灯泡管理后台</h2>
+        <div class="login-form-item">
+            <label>账号</label>
+            <input type="text" id="username" placeholder="请输入账号">
+        </div>
+        <div class="login-form-item">
+            <label>密码</label>
+            <input type="password" id="password" placeholder="请输入密码">
+        </div>
+        <button class="login-btn" onclick="login()">登录</button>
+        <p style="text-align:center;margin-top:15px;color:#999;font-size:12px;">
+            管理员账号：admin 123456<br>
+            主管账号：zhuguan 123456<br>
+            资产账号：zichan 123456<br>
+            供应商账号：gongyingshang 123456
+        </p>
+    </div>
+
+    <!-- 主系统页面 -->
+    <div class="main-container" id="mainBox">
+        <div class="header">
+            <h1 class="title">行政部 · 会议室灯泡管理后台</h1>
+            <div class="user-info">
+                <span>当前用户：<b id="currentUser"></b>（<span id="currentRole"></span>）</span>
+                <button class="logout-btn" onclick="logout()">退出登录</button>
+            </div>
+        </div>
+
+        <!-- 标签栏 -->
+        <div class="tab-box" id="tabBox">
+            <button class="tab active" onclick="switchPage(0)">台账记录</button>
+            <button class="tab" onclick="switchPage(1)">库存管理</button>
+            <button class="tab" onclick="switchPage(2)">供应商面板</button>
+            <button class="tab" onclick="switchPage(3)">导入导出</button>
+            <button class="tab" onclick="switchPage(4)">管理员后台</button>
+        </div>
+
+        <!-- 页面1：台账记录 -->
+        <div class="page active" id="page0">
+            <h3>灯泡出入库台账（实时同步会服端上报数据）</h3>
+            <button class="btn btn-success" onclick="refreshTable()" style="margin:10px 0;">刷新数据</button>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>时间</th>
+                        <th>会议室</th>
+                        <th>型号</th>
+                        <th>数量</th>
+                        <th>状态</th>
+                        <th>操作人</th>
+                    </tr>
+                </thead>
+                <tbody id="recordTable"></tbody>
+            </table>
+        </div>
+
+        <!-- 页面2：库存管理 -->
+        <div class="page" id="page1">
+            <div class="stock-card">
+                <h3>当前库存（实时同步会服端扣减数据）</h3>
+                <br>
+                <p>灯泡型号：ELPLP97</p>
+                <br>
+                <p>库存剩余：<span id="stockNum" style="color:red;font-size:20px;font-weight:bold;">10</span> 个</p>
+            </div>
+            <h3>库存预警</h3>
+            <p style="margin-top:10px;">低于 5 个自动触发紧急采购</p>
+        </div>
+
+        <!-- 页面3：供应商面板 -->
+        <div class="page" id="page2">
+            <h3>供应商待发货订单（实时同步会服端上报数据）</h3>
+            <button class="btn btn-success" onclick="refreshSupply()" style="margin:10px 0;">刷新订单</button>
+            <div class="stock-card" style="background:#fff7e8;">
+                <p id="supplyMsg" style="font-size:16px;">暂无待发货订单</p>
+            </div>
+            <button class="btn btn-success" onclick="finishSupply()">确认发货</button>
+        </div>
+
+        <!-- 页面4：导入导出 -->
+        <div class="page" id="page3">
+            <div class="io-card">
+                <h3>Excel导入导出</h3>
+                <p style="margin:10px 0;color:#666;">支持下载标准模板，批量导入历史台账数据，一键导出全量台账</p>
+                <div class="io-btn-group">
+                    <button class="btn" onclick="downloadTemplate()">下载标准导入模板</button>
+                    <button class="btn btn-success" onclick="importExcel()">导入Excel台账</button>
+                    <button class="btn btn-warning" onclick="exportExcel()">导出当前台账为Excel</button>
+                </div>
+                <input type="file" id="excelFile" accept=".xlsx,.xls" style="display:none;">
+            </div>
+            <div class="msg-box" id="ioMsg" style="display:none;"></div>
+        </div>
+
+        <!-- 页面5：管理员后台 -->
+        <div class="page" id="page4">
+            <div class="admin-card">
+                <h3>用户管理</h3>
+                <p style="margin:10px 0;color:#666;">新增、编辑、删除用户，分配角色权限</p>
+                <div class="admin-form-row">
+                    <div class="form-item">
+                        <label>账号</label>
+                        <input type="text" id="newUsername" placeholder="请输入账号">
+                    </div>
+                    <div class="form-item">
+                        <label>密码</label>
+                        <input type="password" id="newPassword" placeholder="请输入密码">
+                    </div>
+                    <div class="form-item">
+                        <label>角色</label>
+                        <select id="newRole">
+                            <option value="会服专员">会服专员</option>
+                            <option value="会服主管">会服主管</option>
+                            <option value="资产管理员">资产管理员</option>
+                            <option value="供应商">供应商</option>
+                            <option value="管理员">管理员</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn btn-success" onclick="handleAddUser()">新增用户</button>
+            </div>
+            <h3>用户列表</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>账号</th>
+                        <th>角色</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="userTable"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // 全局数据
+        let currentUser = null;
+        let currentRole = null;
+        let stock = 10;
+        let recordList = [];
+        let userList = [];
+        let supplyOrder = null;
+
+        // 系统初始化
+        window.onload = async function() {
+            await initDefaultData();
+            await initData();
+            await checkLogin();
+        }
+
+        // 初始化页面数据
+        async function initData() {
+            userList = await getUserList();
+            recordList = await getRecordList();
+            stock = await getStock();
+            supplyOrder = await getSupplyOrder();
+
+            document.getElementById('stockNum').innerText = stock;
+            document.getElementById('supplyMsg').innerText = supplyOrder || '暂无待发货订单';
+            renderTable();
+        }
+
+        // 登录逻辑
+        async function login() {
+            let username = document.getElementById('username').value;
+            let password = document.getElementById('password').value;
+
+            if(!username || !password) {
+                alert('请输入账号和密码！');
+                return;
+            }
+
+            let user = await findUser(username, password);
+            if(!user) {
+                alert('账号或密码错误！');
+                return;
+            }
+
+            currentUser = user.username;
+            currentRole = user.role;
+            await setCurrentAdmin(currentUser, currentRole);
+
+            document.getElementById('loginBox').style.display = 'none';
+            document.getElementById('mainBox').style.display = 'block';
+
+            document.getElementById('currentUser').innerText = currentUser;
+            document.getElementById('currentRole').innerText = currentRole;
+
+            controlTabShow();
+            renderTable();
+            renderUserTable();
+        }
+
+        // 检查登录状态
+        async function checkLogin() {
+            let admin = await getCurrentAdmin();
+            if(admin) {
+                currentUser = admin.username;
+                currentRole = admin.role;
+                document.getElementById('loginBox').style.display = 'none';
+                document.getElementById('mainBox').style.display = 'block';
+                document.getElementById('currentUser').innerText = currentUser;
+                document.getElementById('currentRole').innerText = currentRole;
+                controlTabShow();
+                renderTable();
+                renderUserTable();
+            }
+        }
+
+        // 退出登录
+        async function logout() {
+            await clearCurrentAdmin();
+            currentUser = null;
+            currentRole = null;
+            document.getElementById('mainBox').style.display = 'none';
+            document.getElementById('loginBox').style.display = 'block';
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+
+        // 权限控制tab显示
+        function controlTabShow() {
+            let tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => tab.style.display = 'none');
+
+            switch(currentRole) {
+                case '管理员':
+                    tabs.forEach(tab => tab.style.display = 'block');
+                    break;
+                case '会服主管':
+                    tabs[0].style.display = 'block';
+                    tabs[1].style.display = 'block';
+                    break;
+                case '资产管理员':
+                    tabs[0].style.display = 'block';
+                    tabs[1].style.display = 'block';
+                    tabs[3].style.display = 'block';
+                    break;
+                case '供应商':
+                    tabs[2].style.display = 'block';
+                    break;
+            }
+        }
+
+        // 切换页面
+        function switchPage(index) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('page'+index).classList.add('active');
+            document.querySelectorAll('.tab')[index].classList.add('active');
+        }
+
+        // 刷新台账数据
+        async function refreshTable() {
+            recordList = await getRecordList();
+            renderTable();
+            alert('数据刷新成功！已同步会服端最新上报数据');
+        }
+
+        // 渲染台账表格
+        function renderTable() {
+            let html = '';
+            recordList.forEach(item => {
+                html += `
+                <tr>
+                    <td>${item.time}</td>
+                    <td>${item.room}</td>
+                    <td>${item.model}</td>
+                    <td>${item.num}</td>
+                    <td>${item.status}</td>
+                    <td>${item.operator}</td>
+                </tr>`;
+            });
+            document.getElementById('recordTable').innerHTML = html;
+        }
+
+        // 刷新供应商订单
+        async function refreshSupply() {
+            supplyOrder = await getSupplyOrder();
+            document.getElementById('supplyMsg').innerText = supplyOrder || '暂无待发货订单';
+            stock = await getStock();
+            document.getElementById('stockNum').innerText = stock;
+            alert('订单刷新成功！已同步最新数据');
+        }
+
+        // 供应商确认发货
+        async function finishSupply() {
+            if(!supplyOrder) {
+                alert('暂无订单');
+                return;
+            }
+            let numMatch = supplyOrder.match(/数量：(\d+)个/);
+            let num = numMatch ? parseInt(numMatch[1]) : 1;
+            stock = await addStock(num);
+            document.getElementById('stockNum').innerText = stock;
+            document.getElementById('supplyMsg').innerText = '✅ 已发货，库存已自动补充';
+            await clearSupplyOrder();
+            supplyOrder = null;
+            alert('发货成功！系统已自动入库');
+        }
+
+        // 下载标准导入模板
+        function downloadTemplate() {
+            let templateData = [
+                ['时间', '会议室', '型号', '数量', '状态', '操作人'],
+                ['2025/1/1 10:00', '301', 'ELPLP97', 1, '已更换', '会服专员']
+            ];
+            let wb = XLSX.utils.book_new();
+            let ws = XLSX.utils.aoa_to_sheet(templateData);
+            XLSX.utils.book_append_sheet(wb, ws, '台账模板');
+            XLSX.writeFile(wb, '会议室灯泡台账导入模板.xlsx');
+        }
+
+        // 导入Excel台账
+        function importExcel() {
+            document.getElementById('excelFile').click();
+            document.getElementById('excelFile').onchange = async function(e) {
+                let file = e.target.files[0];
+                if(!file) return;
+                let reader = new FileReader();
+                reader.onload = async function(e) {
+                    let data = new Uint8Array(e.target.result);
+                    let wb = XLSX.read(data, {type: 'array'});
+                    let ws = wb.Sheets[wb.SheetNames[0]];
+                    let jsonData = XLSX.utils.sheet_to_json(ws, {header: 1});
+                    jsonData.shift();
+                    let importCount = 0;
+                    jsonData.forEach(row => {
+                        if(row[0] && row[1] && row[2] && row[3]) {
+                            recordList.unshift({
+                                time: row[0],
+                                room: row[1],
+                                model: row[2],
+                                num: row[3],
+                                status: row[4] || '已更换',
+                                operator: row[5] || '系统导入'
+                            });
+                            importCount++;
+                        }
+                    });
+                    await setRecordList(recordList);
+                    renderTable();
+                    document.getElementById('ioMsg').innerHTML = `✅ 导入成功！共导入 ${importCount} 条台账数据`;
+                    document.getElementById('ioMsg').style.display = 'block';
+                };
+                reader.readAsArrayBuffer(file);
+            };
+        }
+
+        // 导出Excel台账
+        function exportExcel() {
+            let exportData = [
+                ['时间', '会议室', '型号', '数量', '状态', '操作人']
+            ];
+            recordList.forEach(item => {
+                exportData.push([
+                    item.time,
+                    item.room,
+                    item.model,
+                    item.num,
+                    item.status,
+                    item.operator
+                ]);
+            });
+            let wb = XLSX.utils.book_new();
+            let ws = XLSX.utils.aoa_to_sheet(exportData);
+            XLSX.utils.book_append_sheet(wb, ws, '灯泡出入库台账');
+            XLSX.writeFile(wb, '会议室灯泡出入库台账.xlsx');
+        }
+
+        // 新增用户
+        async function handleAddUser() {
+            let username = document.getElementById('newUsername').value;
+            let password = document.getElementById('newPassword').value;
+            let role = document.getElementById('newRole').value;
+
+            if(!username || !password) {
+                alert('请输入账号和密码！');
+                return;
+            }
+
+            userList = await getUserList();
+            if(userList.find(u => u.username === username)) {
+                alert('账号已存在！');
+                return;
+            }
+
+            await addUser({ username, password, role });
+            userList = await getUserList();
+            renderUserTable();
+
+            document.getElementById('newUsername').value = '';
+            document.getElementById('newPassword').value = '';
+
+            alert('用户新增成功！');
+        }
+
+        // 渲染用户列表
+        function renderUserTable() {
+            let html = '';
+            userList.forEach((user, index) => {
+                html += `
+                <tr>
+                    <td>${user.username}</td>
+                    <td>${user.role}</td>
+                    <td>
+                        <button class="btn btn-danger" onclick="handleDeleteUser('${user.username}')" ${user.username==='admin'?'disabled':''}>删除</button>
+                    </td>
+                </tr>`;
+            });
+            document.getElementById('userTable').innerHTML = html;
+        }
+
+        // 删除用户
+        async function handleDeleteUser(username) {
+            if(confirm('确定要删除该用户吗？')) {
+                await deleteUser(username);
+                userList = await getUserList();
+                renderUserTable();
+            }
+        }
+    </script>
+</body>
+</html>

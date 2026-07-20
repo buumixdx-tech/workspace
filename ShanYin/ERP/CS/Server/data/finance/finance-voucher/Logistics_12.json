@@ -1,0 +1,21 @@
+{
+  "voucher_no": "LOG-12-B42E91",
+  "ref_vc_id": 18,
+  "ref_type": "Logistics",
+  "ref_id": 12,
+  "timestamp": "2026-05-17T13:20:38.356800",
+  "entries": [
+    {
+      "account": "存货/固定资产",
+      "debit": 10500.0,
+      "credit": 0.0,
+      "summary": "采购设备入库"
+    },
+    {
+      "account": "应付账款 (供应商) - 应付账款 (供应商) - 苏州邦基勒",
+      "debit": 0.0,
+      "credit": 10500.0,
+      "summary": "入库挂账"
+    }
+  ]
+}

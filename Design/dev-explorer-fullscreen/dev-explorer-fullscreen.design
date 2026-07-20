@@ -1,0 +1,34 @@
+{
+  "data": [
+    {
+      "id": "page-dev-explorer",
+      "title": "Dev Explorer 全屏页面",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784430444000,
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/dev-explorer.html",
+        "interactions": []
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "desktop",
+    "projectName": "Dev Explorer 全屏页面",
+    "designLibrary": {
+      "name": "TRAE",
+      "id": "dl_builtin_trae",
+      "version": "",
+      "scope": "built-in-global",
+      "path": "c:\\Users\\buumi\\.trae-cn\\design_libraries\\dl_builtin_trae",
+      "versionSource": "metadata.json"
+    },
+    "visualEditorEnabled": true
+  }
+}

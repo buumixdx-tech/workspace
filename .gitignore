@@ -1,0 +1,156 @@
+# Personal / sensitive
+.claude/
+.trae/
+Family/
+Games/
+Tools/
+openclaw_env/
+All/
+Apache/
+Docker/
+MySQL/
+avlib/
+
+# Specific output dirs (产物)
+Trading/annual_report/
+Trading/ckdata/
+Trading/daily_report/
+All/backup/
+LYJ/docs-output/
+
+# LYJ — 只保留 bulb-system/，其他都是个人/工作内容
+LYJ/file1/
+LYJ/file2/
+LYJ/file3/
+LYJ/file4/
+LYJ/file5/
+LYJ/file6/
+LYJ/file7/
+LYJ/file8/
+LYJ/作业/
+LYJ/年终总结/
+LYJ/双周报/
+LYJ/周报/
+LYJ/mail/
+LYJ/mailpython/
+LYJ/Marp/
+LYJ/OKR/
+LYJ/Contract1/
+LYJ/Contract2/
+LYJ/Contract3/
+LYJ/ConferenceRoom/
+LYJ/bulb-system.zip
+
+# ShanYin — 只保留 ERP/ 和 AndroidSignature/，跳过 Datas/ 和 backup/
+ShanYin/Datas/
+ShanYin/backup/
+
+# Akshare — data/ 是 API 缓存和报告输出
+Trading/Akshare/data/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+npm/
+.npm/
+
+# Logs / runtime
+logs/
+*.log
+access.log
+
+# Data / DBs
+*.db
+*.db-*
+*.db-wal
+*.db-shm
+*.db-journal
+*.sqlite
+*.sqlite3
+data/cache/
+**/ima_txt/
+
+# Secrets
+.env
+.env.*
+*.key
+*.pem
+secrets/
+
+# Hardcoded credentials (override)
+LYJ/bulb-system/scripts/get_token.js
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Office / binary blobs
+*.exe
+*.dll
+*.zip
+*.rar
+*.7z
+*.tar.gz
+*.tar.bz2
+*.iso
+*.msi
+*.pdf
+*.pptx
+*.ppt
+*.apk
+*.docx
+*.doc
+*.xlsx
+*.xls
+
+# Office temp / lock files
+~$.*
+*.tmp
+*.bak
+**/*.bak
+**/*.bak_*
+
+# Binaries / large media
+*.mp4
+*.mp3
+*.mpg
+*.mov
+*.avi
+*.mkv
+*.wav
+
+# Image binaries (allow README/docs exceptions)
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.tiff
+*.webp
+*.ico
+!README.md
+!docs/**/*.png
+!docs/**/*.svg
+
+# Thumbnails / cache
+Thumbs.db
+desktop.ini
+.DS_Store

@@ -1,0 +1,36 @@
+{
+  "success": true,
+  "skillProvenance": {
+    "name": "solo-design",
+    "version": null,
+    "version_source": "unknown",
+    "runtime_skill_dir": null,
+    "recorded_at": null,
+    "read_status": "missing",
+    "reason": "orchestration-summary.json missing skillProvenance"
+  },
+  "operatingMode": "free-explore",
+  "renderBlockingErrorCount": 0,
+  "softWarningCount": 4,
+  "renderBlockingErrors": [],
+  "softWarnings": [
+    "[orchestration-summary] orchestration-summary.json is missing. Canvas validation can still pass, but quality-context checks (operatingMode, visualNorthStar, compositionPattern, continuityAnchors, miniProgramStyle) are degraded.",
+    "[html-quality] colors_and_type.css: free-explore brand CSS must use one primary hue only; forbidden secondary/accent brand variables found (--color-accent, --text-secondary, --text-secondary-hover, --text-secondary-active, --icon-secondary, --icon-secondary-hover, --icon-secondary-active, --accent-teal, --accent-coral, --accent-amber, --accent-lime, --accent-cyan). Use --state-success/warning/error/info only for semantic states.",
+    "[html-quality] colors_and_type.css: free-explore radius tokens must stay within the restrained 2/4/8/12/16px scale; oversized or forbidden radius tokens found (--radius-xl: var(--radius-8), --radius-2xl: var(--radius-10)). Do not use 20px+ radii unless the user explicitly requested large rounded shapes.",
+    "[html-quality] dev-explorer.html: free-explore pages must not use secondary/accent brand variables. Use the single primary hue, neutral tints, or --state-success/warning/error/info for real semantic states."
+  ],
+  "repairPlanHints": [],
+  "errorCount": 0,
+  "warningCount": 4,
+  "errors": [],
+  "warnings": [
+    "[orchestration-summary] orchestration-summary.json is missing. Canvas validation can still pass, but quality-context checks (operatingMode, visualNorthStar, compositionPattern, continuityAnchors, miniProgramStyle) are degraded.",
+    "[html-quality] colors_and_type.css: free-explore brand CSS must use one primary hue only; forbidden secondary/accent brand variables found (--color-accent, --text-secondary, --text-secondary-hover, --text-secondary-active, --icon-secondary, --icon-secondary-hover, --icon-secondary-active, --accent-teal, --accent-coral, --accent-amber, --accent-lime, --accent-cyan). Use --state-success/warning/error/info only for semantic states.",
+    "[html-quality] colors_and_type.css: free-explore radius tokens must stay within the restrained 2/4/8/12/16px scale; oversized or forbidden radius tokens found (--radius-xl: var(--radius-8), --radius-2xl: var(--radius-10)). Do not use 20px+ radii unless the user explicitly requested large rounded shapes.",
+    "[html-quality] dev-explorer.html: free-explore pages must not use secondary/accent brand variables. Use the single primary hue, neutral tints, or --state-success/warning/error/info for real semantic states."
+  ],
+  "designDir": "d:\\WorkSpace\\Design\\dev-explorer-fullscreen",
+  "expectedPages": 1,
+  "requireInteractions": null,
+  "checkedAt": "2026-07-19T03:18:12.071Z"
+}

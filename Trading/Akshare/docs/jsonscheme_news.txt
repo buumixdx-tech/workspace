@@ -1,0 +1,88 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "标题": {
+      "type": "string",
+      "description": "新闻标题"
+    },
+    "发布来源": {
+      "type": "string",
+      "description": "新闻发布媒体或平台"
+    },
+    "转载来源": {
+      "type": ["string", "null"],
+      "description": "若为转载，填写原始来源；否则为空字符串"
+    },
+    "消息类型": {
+      "type": "string",
+      "enum": [
+        "信息汇总",
+        "个股研报",
+        "行业研报",
+        "行业要闻",
+        "产业要闻",
+        "个股要闻",
+        "个股公告",
+        "个股资讯",
+        "财经要闻"
+      ],
+      "description": "消息分类类型"
+    },
+    "重要程度": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "重要性等级，1 最不重要，5 最重要"
+    },
+    "发布时间": {
+      "type": "string",
+      "format": "date-time",
+      "description": "格式为 YYYY-MM-DD HH:MM:SS"
+    },
+    "综述": {
+      "type": "string",
+      "maxLength": 50,
+      "description": "不超过50字的内容摘要"
+    },
+    "影响板块": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "受该新闻影响的行业板块列表"
+    },
+    "直接提到的个股": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "新闻中明确提及的上市公司名称（含股票代码更佳），如果没有此项为空"
+    },
+    "可能影响的个股": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 5,
+      "description": "虽未直接提及但逻辑上可能受影响的上市公司（最多5只）"
+    },
+    "原文链接": {
+      "type": "string",
+      "format": "uri",
+      "description": "指向原始新闻页面的完整 URL"
+    }
+  },
+  "required": [
+    "标题",
+    "发布来源",
+    "消息类型",
+    "重要程度",
+    "发布时间",
+    "综述",
+    "影响板块",
+    "可能影响的个股",
+    "原文链接"
+  ],
+  "additionalProperties": false
+}

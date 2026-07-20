@@ -1,0 +1,23 @@
+-- ============================================================================
+-- Migration 003: 删除 extracted.source_run_id 列
+--
+-- Context:
+--   source_run_id 是个"会被覆盖的聚合字段",无真正追溯价值:
+--     - 每次 upsert 都会覆盖原值,无法回查历史分类结果
+--     - 真正追溯应建独立的 runs 表(本次不做)
+--
+--   替代方案:
+--     - created_at  (首次入 SQLite 时间,不可变)
+--     - posted_at + post_track_id  (lightrag 入库状态)
+--
+-- Owner: feishu_preprocess
+--
+-- Applied: 2026-06-19 (jcloud + local demo)
+--
+-- Prerequisite: SQLite ≥ 3.35 (ALTER TABLE DROP COLUMN 语法要求)
+--   jcloud 默认 sqlite3 ≥ 3.37,本地需 ≥ 3.35
+-- ============================================================================
+
+-- 先验证列存在(避免误删)
+-- 如果列已不存在,此 ALTER 会失败,这就是我们要的: 防止重跑或漏跑
+ALTER TABLE extracted DROP COLUMN source_run_id;

@@ -1,0 +1,23 @@
+import os, paramiko
+from dotenv import load_dotenv
+load_dotenv(r'D:\WorkSpace\Trading\Research\Articles\.env')
+c = paramiko.SSHClient()
+c.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+c.connect(os.environ['JCLOUD_HOST'], username=os.environ['JCLOUD_USER'], password=os.environ['JCLOUD_PWD'])
+def run(cmd):
+    si, so, se = c.exec_command(cmd)
+    print(f'$ {cmd}')
+    out = so.read().decode(errors='replace')
+    err = se.read().decode(errors='replace')
+    if out: print(out.rstrip())
+    if err: print('  [stderr]', err.rstrip())
+    print()
+run('ls -la /var/www/articles/article_2077699981990133958.html')
+run('ls -ld /var/www/articles /var/www/articles/assets /var/www/articles/assets/2077699981990133958')
+run('curl -s -o /dev/null -w "localhost /articles/html : %{http_code}\\n" http://localhost/articles/article_2077699981990133958.html')
+run('curl -s -o /dev/null -w "localhost /articles/      : %{http_code}\\n" http://localhost/articles/')
+run('curl -s -o /dev/null -w "localhost /articles/api/  : %{http_code}\\n" http://localhost/articles/api/health')
+run('grep -n -B1 -A9 "articles" /etc/nginx/sites-enabled/unified')
+run('nginx -t 2>&1')
+run('ls -la /var/www/articles/ | head -20')
+c.close()

@@ -1,0 +1,131 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "MarketDataPacker Input Schema",
+    "description": "Schema for the data dictionary passed to MarketDataPacker.pack()",
+    "type": "object",
+    "required": [
+        "timestamp",
+        "top_concepts",
+        "boom_concepts",
+        "lottery_pool",
+        "small_cap_pool"
+    ],
+    "properties": {
+        "timestamp": {
+            "description": "Data snapshot time",
+            "oneOf": [
+                {
+                    "type": "string",
+                    "format": "date-time",
+                    "examples": [
+                        "2026-01-28 14:00:00"
+                    ]
+                },
+                {
+                    "type": "object",
+                    "description": "Python datetime object (not strictly JSON, but valid in Python dict)"
+                }
+            ]
+        },
+        "top_concepts": {
+            "description": "List of Top 10 Gainers Concepts (Section A)",
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/concept"
+            }
+        },
+        "boom_concepts": {
+            "description": "List of Limit-Up Resonance Concepts (Section B)",
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/concept"
+            }
+        },
+        "lottery_pool": {
+            "description": "List of Surging Stocks (Section C). Will have Flag Bit 7 set to 1.",
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/stock"
+            }
+        },
+        "small_cap_pool": {
+            "description": "List of Smart-Money/Small-Cap Stocks (Section D). Will have Flag Bit 6 set to 1.",
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/stock"
+            }
+        }
+    },
+    "definitions": {
+        "concept": {
+            "type": "object",
+            "required": [
+                "concept_name",
+                "pct_chg",
+                "limit_up_count",
+                "limit_down_count",
+                "rise_count",
+                "fall_count",
+                "turnover_rate"
+            ],
+            "properties": {
+                "concept_name": {
+                    "type": "string",
+                    "description": "Exact concept name matching the static dictionary."
+                },
+                "pct_chg": {
+                    "type": "number",
+                    "description": "Percentage change (e.g. 5.23 for 5.23%)"
+                },
+                "limit_up_count": {
+                    "type": "integer"
+                },
+                "limit_down_count": {
+                    "type": "integer"
+                },
+                "rise_count": {
+                    "type": "integer"
+                },
+                "fall_count": {
+                    "type": "integer"
+                },
+                "turnover_rate": {
+                    "type": "number",
+                    "description": "Turnover rate (e.g. 2.5 for 2.5%)"
+                }
+            }
+        },
+        "stock": {
+            "type": "object",
+            "required": [
+                "code"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "pattern": "^(sh|sz|bj)\\.\\d{6}$",
+                    "description": "Full stock code (e.g., 'sz.300059'). The compressor will strip the prefix and only transmit the 6-digit number (3 bytes)."
+                },
+                "reason_bits": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 63,
+                    "default": 0,
+                    "description": "6-bit mask (0-63). Each bit represents an independent status flag (Bit 0-5), allowing superposition (e.g., 3 means Bit0 & Bit1). Currently reserved as 0."
+                },
+                "source_concept": {
+                    "type": "string",
+                    "description": "Comma-separated concept names to associate with (e.g. '人工智能,软件开发')."
+                },
+                "matched_concept": {
+                    "type": "string",
+                    "description": "Additional concept names to associate with (comma-separated, optional)."
+                },
+                "_is_surging": {
+                    "type": "boolean",
+                    "description": "Internal flag. True if this stock was merged from the lottery pool (Section C). Used to set Flag Bit 7."
+                }
+            }
+        }
+    }
+}

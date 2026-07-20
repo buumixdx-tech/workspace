@@ -1,0 +1,55 @@
+{
+  "run_at": "2026-07-20T12:08:06.328557+08:00",
+  "db": {
+    "path": "D:\\workspace\\Trading\\Recourse\\feishu_ext\\data\\preprocess.db",
+    "size": 60850176
+  },
+  "frontmatter": {
+    "name": "historical",
+    "version": 4,
+    "model": "qwen3.5-flash",
+    "updated_at": "2026-06-30",
+    "target_messages": "截止 2026-06-17 23:59:59 UTC 的飞书群聊历史回填",
+    "changelog": [
+      {
+        "date": "2026-06-30",
+        "note": "取消 summary 30 字硬截断 — 允许略超以保证句意完整, 软上限 50 字, 配套移除 schemas._trim_summary 防御性截断 (避免\"晶升股份…坚定看\"类断头摘要进 db, 下游日报信息量不足)"
+      },
+      {
+        "date": "2026-06-23",
+        "note": "完善\"盘中提示 (code=7)\"定义 — 强调\"纯描述\"边界, 带分析/解读/原因归因/投资观点的应归 1/2/3 类"
+      }
+    ]
+  },
+  "input_payload": {
+    "count": 1,
+    "items": [
+      {
+        "idx": 1,
+        "ts": 1784520180000,
+        "text": "![Image](img_v3_0213p_e7706b55-6341-4c71-b0ca-56363783a0cg) ![Image](img_v3_0213p_96bb5a44-615b-4c8d-8c64-732584e546cg)",
+        "orig_len": 119
+      }
+    ]
+  },
+  "raw_response": "{\n  \"results\": [\n    {\n      \"task_id\": 1,\n      \"info_type\": 10,\n      \"category\": \"\",\n      \"involved_stocks\": [],\n      \"core_tech_terms\": [],\n      \"summary\": \"\"\n    }\n  ]\n}",
+  "parsed": {
+    "results": [
+      {
+        "task_id": 1,
+        "info_type": 10,
+        "category": "",
+        "involved_stocks": [],
+        "core_tech_terms": [],
+        "summary": ""
+      }
+    ]
+  },
+  "usage": {
+    "format": "json_object",
+    "model": "qwen3.5-flash",
+    "prompt_tokens": 2767,
+    "completion_tokens": 67,
+    "total_tokens": 2834
+  }
+}

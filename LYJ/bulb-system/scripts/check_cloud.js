@@ -1,0 +1,1 @@
+const {initDB}=require("./src/server/db/init");initDB().then(()=>{const db=require("./src/server/db/init").getDB();const r=db.db.exec("SELECT id,name,type,compatible_model_ids FROM skus WHERE type='projector'");r.forEach(row=>console.log(row.columns,row.values));process.exit(0);})

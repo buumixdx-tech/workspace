@@ -1,0 +1,21 @@
+{
+  "voucher_no": "LOG-11-783CBD",
+  "ref_vc_id": 11,
+  "ref_type": "Logistics",
+  "ref_id": 11,
+  "timestamp": "2026-05-08T17:15:58.746961",
+  "entries": [
+    {
+      "account": "主营业务收入",
+      "debit": 0.0,
+      "credit": 7980.0,
+      "summary": "物料供应确认收入"
+    },
+    {
+      "account": "应收账款 (客户) - 应收账款 (客户) - 和美记",
+      "debit": 7980.0,
+      "credit": 0.0,
+      "summary": "交付挂账"
+    }
+  ]
+}

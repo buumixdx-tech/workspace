@@ -1,0 +1,45 @@
+# Docker Compose 配置 - 闪饮 ERP Server
+# 用法: docker-compose up -d
+
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shanyin-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - ENV=production
+      # 生产环境必须设置强密钥（至少 64 字符）
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET is required in production}
+      - CORS_ORIGINS=https://erp.example.com,https://www.erp.example.com
+    volumes:
+      # 持久化数据库
+      - ./data:/app/data
+      # 可选：持久化上传文件
+      - ./uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/system/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # 可选：nginx 反向代理（在同一主机同时部署前端时启用）
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: shanyin-nginx
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+  #     - ./client/dist:/usr/share/nginx/html:ro
+  #     - /etc/letsencrypt:/etc/letsencrypt:ro
+  #   depends_on:
+  #     - api

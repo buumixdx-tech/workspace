@@ -1,0 +1,6 @@
+cookies*.txt
+.env
+*.log
+__pycache__/
+*.pyc
+output/  # 临时输出, 不入版本控制

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>我的资料库</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#1a1a2e;--card:#16213e;--accent:#0ea5e9;--text:#e2e8f0;--dim:#94a3b8;--border:#334155;--err:#ef4444}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:16px;padding-bottom:80px}
+header{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);margin-bottom:16px}
+h1{font-size:1.2rem}
+select{background:var(--card);color:var(--text);border:1px solid var(--border);padding:8px 12px;border-radius:8px}
+.btn{background:var(--card);color:var(--text);border:1px solid var(--border);padding:8px 16px;border-radius:8px;cursor:pointer}
+.btn-accent{background:var(--accent);border:none;color:#fff;font-weight:600}
+.btn:hover{opacity:0.9}
+.tabs{display:flex;gap:4px;margin-bottom:16px}
+.tab{flex:1;padding:10px;background:var(--card);border:none;color:var(--dim);border-radius:8px;cursor:pointer}
+.tab.active{background:var(--accent);color:#fff}
+.input-area{background:var(--card);border-radius:12px;padding:16px;margin-bottom:16px}
+textarea{width:100%;min-height:200px;background:transparent;border:none;color:var(--text);font-size:1rem;resize:none;outline:none;font-family:inherit}
+textarea::placeholder{color:var(--dim)}
+.preview{min-height:200px;font-size:1rem;line-height:1.6;display:none}
+.preview.active{display:block}
+.preview h1,.preview h2,.preview h3{margin:12px 0 8px}
+.preview p{margin:8px 0}
+.preview code{background:#0f172a;padding:2px 6px;border-radius:4px}
+.preview pre{background:#0f172a;padding:12px;border-radius:8px;overflow-x:auto}
+.preview ul,.preview ol{padding-left:20px}
+.preview blockquote{border-left:3px solid var(--accent);padding-left:12px;color:var(--dim)}
+.toolbar{display:flex;gap:8px;padding-top:12px}
+.toolbar button{width:48px;height:48px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:1.1rem;cursor:pointer}
+.send-btn{flex:1;background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:1rem;font-weight:600}
+.send-btn:active{opacity:0.8}
+.files{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.file{position:relative;width:56px;height:56px;background:var(--bg);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;text-align:center;padding:4px;border:1px solid var(--border);word-break:break-all}
+.file .x{position:absolute;top:-5px;right:-5px;width:16px;height:16px;background:var(--err);border-radius:50%;font-size:0.6rem;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:16px;color:#fff}
+.records{margin-top:16px}
+.record{background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px}
+.record-header{font-size:0.75rem;color:var(--dim);margin-bottom:6px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px}
+.record-cat{background:var(--accent);color:#fff;padding:1px 6px;border-radius:4px;font-size:0.65rem}
+.record-content{font-size:0.9rem;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:10px 20px;border-radius:6px;font-size:0.85rem;opacity:0;transition:opacity 0.3s;z-index:999}
+.toast.show{opacity:1}
+input[type=file]{display:none}
+.loading{text-align:center;padding:40px;color:var(--dim)}
+.login-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh}
+.login-box{background:var(--card);border-radius:16px;padding:32px;width:100%;max-width:320px}
+.login-box h2{text-align:center;margin-bottom:24px;font-size:1.3rem}
+.login-box input{width:100%;padding:12px 16px;margin-bottom:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:1rem}
+.login-box input:focus{outline:none;border-color:var(--accent)}
+.login-box button{width:100%;padding:12px;margin-top:8px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:1rem;font-weight:600;cursor:pointer}
+.login-box button:active{opacity:0.8}
+.login-err{color:var(--err);font-size:0.85rem;text-align:center;margin-top:8px;min-height:20px}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+<!-- 登录页 -->
+<div id="loginPage" class="login-wrap">
+  <div class="login-box">
+    <h2>我的资料库</h2>
+    <input type="text" id="username" placeholder="用户名" autocomplete="off">
+    <input type="password" id="password" placeholder="密码">
+    <button onclick="doLogin()">登录</button>
+    <div id="loginErr" class="login-err"></div>
+  </div>
+</div>
+
+<!-- 主页面 -->
+<div id="mainPage" class="hidden">
+  <header>
+    <h1>我的资料库</h1>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="cat"><option value="stock">股票</option><option value="life">生活</option><option value="funny">有趣</option></select>
+      <button class="btn" onclick="logout()">退出</button>
+    </div>
+  </header>
+
+  <div class="tabs"><button class="tab active" id="tab-edit" data-t="edit">编辑</button><button class="tab" id="tab-records" data-t="records">记录</button></div>
+
+  <div id="input">
+    <div class="input-area">
+      <div id="editor"><textarea id="txt" placeholder="粘贴文字或笔记，支持 Markdown..."></textarea><div class="files" id="files"></div></div>
+      <div class="preview" id="preview"></div>
+    </div>
+    <div class="toolbar">
+      <button onclick="pickFile()">📎</button>
+      <button onclick="pickFile('image/*')">🖼️</button>
+      <button onclick="pickFile('.pdf,.doc,.docx,.xls,.xlsx')">📄</button>
+      <button class="send-btn" onclick="send()">发送</button>
+    </div>
+  </div>
+
+  <div id="list"></div>
+</div>
+
+<div id="toast" class="toast"></div>
+<input type="file" id="fi" multiple>
+
+<script>
+var A='/api';
+var TOKEN=localStorage.getItem('mycloud_token');
+var USERNAME=localStorage.getItem('mycloud_user');
+
+// 检查登录状态
+if(TOKEN){
+  document.getElementById('loginPage').classList.add('hidden');
+  document.getElementById('mainPage').classList.remove('hidden');
+}else{
+  document.getElementById('loginPage').classList.remove('hidden');
+  document.getElementById('mainPage').classList.add('hidden');
+}
+
+function logout(){
+  localStorage.removeItem('mycloud_token');
+  localStorage.removeItem('mycloud_user');
+  location.reload();
+}
+
+async function doLogin(){
+  var u=document.getElementById('username').value.trim();
+  var p=document.getElementById('password').value;
+  var err=document.getElementById('loginErr');
+  err.textContent='';
+  if(!u||!p){err.textContent='请输入用户名和密码';return;}
+  try{
+    var r=await fetch(A+'/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
+    var d=await r.json();
+    if(!r.ok)throw new Error(d.detail||'登录失败');
+    localStorage.setItem('mycloud_token',d.token);
+    localStorage.setItem('mycloud_user',d.username);
+    document.getElementById('loginPage').classList.add('hidden');
+    document.getElementById('mainPage').classList.remove('hidden');
+  }catch(e){err.textContent=e.message;}
+}
+
+async function api(url,options){
+  var opt=options||{};
+  opt.headers=opt.headers||{};
+  opt.headers['Authorization']='Bearer '+TOKEN;
+  var r=await fetch(A+url,opt);
+  if(r.status===401){logout();throw new Error('登录已过期');}
+  if(!r.ok){
+    var d=await r.json().catch(()=>({}));
+    throw new Error(d.detail||'请求失败');
+  }
+  return r.json();
+}
+
+var cur='edit',fs=[];
+var editBtn=document.getElementById('tab-edit');
+var recBtn=document.getElementById('tab-records');
+editBtn.addEventListener('click',function(){
+  editBtn.classList.add('active');
+  recBtn.classList.remove('active');
+  cur='edit';
+  document.getElementById('input').style.display='block';
+  document.getElementById('list').style.display='none';
+});
+recBtn.addEventListener('click',function(){
+  recBtn.classList.add('active');
+  editBtn.classList.remove('active');
+  cur='records';
+  document.getElementById('input').style.display='none';
+  document.getElementById('list').style.display='block';
+  load();
+});
+
+document.getElementById('preview').addEventListener('click',function(){
+  var p=document.getElementById('preview');
+  if(p.classList.contains('active')){
+    document.getElementById('editor').style.display='block';
+    p.classList.remove('active');
+  }else{
+    var c=document.getElementById('txt').value.trim();
+    if(c){
+      p.innerHTML=DOMPurify.sanitize(marked.parse(c));
+      document.getElementById('editor').style.display='none';
+      p.classList.add('active');
+    }
+  }
+});
+
+function pickFile(a){
+  var i=document.getElementById('fi');
+  i.accept=a||'*/*';
+  i.onchange=function(){
+    Array.from(i.files).forEach(function(f){
+      fs.push(f);
+      var d=document.createElement('div');
+      d.className='file';
+      var n=f.name.length>8?f.name.substring(0,8)+'..':f.name;
+      d.innerHTML='<span>'+n+'</span><span class="x" onclick="rm(this)">x</span>';
+      document.getElementById('files').appendChild(d);
+    });
+    i.value='';
+  };
+  i.click();
+}
+
+function rm(e){
+  var name=e.parentElement.dataset.name;
+  fs=fs.filter(function(f){return f.name!==name;});
+  e.parentElement.remove();
+}
+
+async function send(){
+  var c=document.getElementById('txt').value.trim();
+  var x=document.getElementById('cat').value;
+  if(!c&&fs.length===0){toast('请输入内容或选择文件');return;}
+  var btn=document.querySelector('.send-btn');
+  btn.textContent='发送中...';
+  btn.disabled=true;
+  try{
+    if(c){
+      await api('/records',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'text',category:x,content:c})});
+    }
+    for(var i=0;i<fs.length;i++){
+      var fd=new FormData();
+      fd.append('category',x);
+      fd.append('file',fs[i]);
+      await api('/files',{method:'POST',body:fd});
+    }
+    document.getElementById('txt').value='';
+    fs=[];
+    document.getElementById('files').innerHTML='';
+    toast('发送成功');
+  }catch(e){toast('发送失败: '+e.message);}
+  finally{btn.textContent='发送';btn.disabled=false;}
+}
+
+async function load(){
+  var x=document.getElementById('cat').value;
+  var l=document.getElementById('list');
+  l.innerHTML='<div class="loading">加载中...</div>';
+  try{
+    var r=await api('/records?category='+x);
+    var f=await api('/files?category='+x);
+    if(r.length===0&&f.length===0){l.innerHTML='<div class="loading">暂无记录</div>';return;}
+    var h='<div class="records">';
+    for(var i=0;i<r.length;i++){
+      var r2=r[i];
+      var isMD=r2.content&&(r2.content.indexOf('#')>-1||r2.content.indexOf('**')>-1||r2.content.indexOf('- ')>-1);
+      var d=new Date(r2.created_at).toLocaleString('zh-CN');
+      var c=isMD?DOMPurify.sanitize(marked.parse(r2.content)):r2.content;
+      h+='<div class="record"><div class="record-header"><span class="record-cat">'+r2.category+'</span><span>'+d+'</span></div><div class="record-content">'+c+'</div></div>';
+    }
+    for(var i=0;i<f.length;i++){
+      var f2=f[i];
+      h+='<div class="record"><div class="record-header"><span class="record-cat">'+f2.category+'</span><span>'+f2.original_name+'</span><span>'+(f2.file_size/1024).toFixed(1)+'KB</span></div></div>';
+    }
+    l.innerHTML=h+'</div>';
+  }catch(e){l.innerHTML='<div class="loading">加载失败</div>';toast(e.message);}
+}
+
+function toast(m){
+  var t=document.getElementById('toast');
+  t.textContent=m;
+  t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},2000);
+}
+
+document.getElementById('cat').addEventListener('change',function(){
+  if(cur==='records')load();
+});
+
+document.getElementById('password').addEventListener('keypress',function(e){
+  if(e.key==='Enter')doLogin();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+# stock_watchlist 服务配置
+
+[server]
+host = "127.0.0.1"
+port = 5181
+
+[tdx]
+# 通达信行情主机列表，留空使用 eltdx 内置默认池
+# hosts = []
+timeout = 3.0
+heartbeat_interval = 30.0
+probe_hosts = true
+
+[stocks]
+# A 股代码表缓存
+cache_file = "data/a_share_list.json"
+max_age_hours = 24
+force_refresh_on_start = false

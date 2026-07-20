@@ -1,0 +1,15 @@
+{
+  "source": "feishu",
+  "mode": "historical",
+  "last_run_at": "2026-07-20T12:08:06+08:00",
+  "last_status": "success",
+  "last_duration_s": 4,
+  "last_batch_size": 1,
+  "last_input_chars": 119,
+  "last_tokens": {
+    "in": 2767,
+    "out": 67,
+    "total": 2834
+  },
+  "last_extracted_count": 1
+}

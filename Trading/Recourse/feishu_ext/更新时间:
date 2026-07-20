@@ -1,0 +1,72 @@
+usage: ssh_exec.py [-h] [--host HOST] [--port PORT] [--user USERNAME]
+                   [--password PASSWORD] [--key KEY_FILE] --command COMMAND
+                   [--timeout WAIT_TIMEOUT] [--json]
+ssh_exec.py: error: unrecognized arguments: {name},
+        f,
+        f {NOW},
+        f,
+        f## 路径,
+        f,
+        f- 代码目录: ,
+        f- 文档目录: ,
+        f,
+        f## 关键文件,
+        f,
+    ]
+    
+    for f in key_files:
+        rel = os.path.relpath(f, code_path)
+        lines.append(f- )
+    
+    lines.extend(['', '## 端口', '', f'监听端口: ', ''])
+    
+    if existing_content:
+        lines.extend(['', '## 原始文档', '', '---', ''])
+        # 保留前40行
+        existing_lines = existing_content.split('\n')[:60]
+        # 去掉 ANSI 颜色码
+        ansi_escape = re.compile(r'\x1b\[[0-9;]*m')
+        existing_lines = [ansi_escape.sub('', l) for l in existing_lines]
+        lines.extend(existing_lines)
+    
+    content = '\n'.join(lines)
+    
+    with open(readme_path, 'w', encoding='utf-8') as f:
+        f.write(content)
+    
+    print(f'Generated: {readme_path}')
+    return readme_path
+
+# 生成各应用的 README
+for app in APPS:
+    try:
+        generate_readme(app)
+    except Exception as e:
+        print(f'Error generating {app["name"]}: {e}')
+
+# 生成总索引
+index_lines = [
+    '# jcloud 应用文档索引',
+    '',
+    f'> 更新时间: {NOW}',
+    '',
+    '## 应用列表',
+    '',
+    '| 应用 | 代码目录 | 文档 |',
+    '|------|----------|------|',
+]
+
+for app in APPS:
+    name = app['name']
+    code = app['code_path']
+    doc = f''
+    index_lines.append(f'| {name} |  | {doc} |')
+
+index_lines.extend(['', '---', '', '## 说明', '', '本目录下的文档由  脚本生成。'])
+
+with open(os.path.join(ROOT, 'README.md'), 'w', encoding='utf-8') as f:
+    f.write('\n'.join(index_lines))
+
+print(f'Generated index: {ROOT}/README.md')
+SCRIPTEOF
+echo done

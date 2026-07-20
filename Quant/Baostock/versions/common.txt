@@ -1,0 +1,402 @@
+import baostock as bs
+import pandas as pd
+from clickhouse_driver import Client
+from datetime import datetime, date, timedelta
+import time
+import logging
+import os
+from openpyxl import load_workbook
+import socket
+from functools import wraps
+import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor  
+import chardet
+import threading
+
+# 配置日志
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('stock_import.log')
+    ]
+)
+logger = logging.getLogger(__name__)
+
+# 全局配置
+MAX_WORKERS = 16  # 增加并发线程数
+RETRY_LIMIT = 3
+HIST_START_DATE = "2025-01-01"  # 历史数据起始日期
+
+def get_clickhouse_client():
+    """获取ClickHouse连接"""
+    return Client(
+        host='localhost',
+        port=9000,
+        user='admin',
+        password='admin_password',
+        database='stock_data',
+        settings={
+            'max_block_size': 100000,
+            'insert_distributed_sync': 1,
+            'max_insert_threads': 8
+        }
+    )
+    
+def handle_network_errors(func):
+    """网络操作装饰器"""
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        MAX_RETRIES = 3
+        for attempt in range(MAX_RETRIES):
+            try:
+                return func(*args, **kwargs)
+            except socket.error as e:
+                if attempt == MAX_RETRIES - 1:
+                    raise
+                wait_time = 2 ** (attempt + 1)
+                logger.warning(f"网络错误({str(e)}), {wait_time}秒后重试...")
+                time.sleep(wait_time)
+            except bs.BaostockError as e:
+                if "接收数据异常" in str(e):
+                    logger.warning(f"Baostock数据接收异常, 重新初始化连接...")
+                    bs.logout()
+                    time.sleep(5)
+                    bs.login()
+                    continue
+                raise
+    return wrapper
+
+# 修改后的函数调用方式
+@handle_network_errors
+def safe_fetch_stock_data(code, start_date, end_date):
+    return fetch_stock_data(code, start_date, end_date)
+
+def detect_encoding(byte_data):
+    """自动检测字节数据的编码"""
+    result = chardet.detect(byte_data)
+    return result['encoding'] or 'utf-8'
+
+def fetch_stock_data(code, start_date, end_date, retry=0):
+    """终极稳定版股票数据获取函数"""
+    MAX_RETRIES = 3
+    RETRY_DELAY = 2
+    LOGIN_MAX_ATTEMPTS = 3
+    
+    def ensure_connected():
+        """确保Baostock连接有效"""
+        for _ in range(LOGIN_MAX_ATTEMPTS):
+            try:
+                login_result = bs.login()
+                if login_result.error_code == '0':
+                    return True
+            except Exception as e:
+                logger.warning(f"登录异常: {str(e)}")
+            time.sleep(RETRY_DELAY)
+        return False
+    
+    try:
+        # 确保连接有效
+        if not ensure_connected():
+            raise ConnectionError("无法建立Baostock连接")
+
+        # 数据查询
+        rs = None
+        try:
+            rs = bs.query_history_k_data_plus(
+                code=code,
+                fields="date,open,high,low,close,preclose,volume,amount,turn,tradestatus,isST,adjustflag",
+                start_date=start_date,
+                end_date=end_date,
+                frequency="d",
+                adjustflag="3"
+            )
+
+            # 检查查询结果有效性
+            if not rs or rs.error_code != '0':
+                error_msg = rs.error_msg if rs else "空结果集"
+                logger.warning(f"股票 {code} 查询失败: {error_msg}")
+                return pd.DataFrame()
+
+            # 安全获取数据
+            data_list = []
+            field_count = len(rs.fields)
+            while True:
+                try:
+                    if not rs.next():
+                        break
+                    row = rs.get_row_data()
+                    # 检查行数据完整性
+                    if len(row) != field_count:
+                        logger.warning(f"股票 {code} 数据列不匹配，期望 {field_count} 列，实际 {len(row)} 列")
+                        continue
+                    data_list.append(row)
+                except Exception as e:
+                    logger.warning(f"股票 {code} 行数据读取异常: {str(e)}")
+                    continue
+
+            # 构造DataFrame
+            if not data_list:
+                logger.warning(f"股票 {code} 无有效数据")
+                return pd.DataFrame()
+                
+            df = pd.DataFrame(data_list, columns=rs.fields)
+            
+            # 类型转换
+            if not df.empty:
+                df['date'] = pd.to_datetime(df['date'], errors='coerce').dt.date
+                df['code'] = code
+                
+                # 数值处理
+                num_cols = ['open', 'high', 'low', 'close', 'preclose', 'turn', 'amount']
+                df[num_cols] = df[num_cols].apply(pd.to_numeric, errors='coerce')
+                
+                # 整数处理
+                int_cols = {'volume': 'uint64', 'tradestatus': 'uint8', 'isST': 'uint8'}
+                for col, dtype in int_cols.items():
+                    df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(dtype)
+                
+                df['adjustflag'] = df['adjustflag'].astype(str)
+
+            return df
+
+        finally:
+            if rs:
+                try:
+                    rs.close()
+                except:
+                    pass
+
+    except Exception as e:
+        logger.error(f"股票 {code} 处理异常: {str(e)}")
+        if retry < MAX_RETRIES:
+            wait_time = RETRY_DELAY ** (retry + 1)
+            logger.info(f"将在 {wait_time} 秒后重试...")
+            time.sleep(wait_time)
+            return fetch_stock_data(code, start_date, end_date, retry+1)
+        return pd.DataFrame()
+    finally:
+        try:
+            bs.logout()
+        except:
+            logger.debug("登出异常可忽略")
+
+def bulk_insert_to_clickhouse(client, df):
+    """安全高效的ClickHouse批量写入函数"""
+    if df.empty:
+        logger.debug("空DataFrame，跳过写入")
+        return
+
+    try:
+        # 列名和类型验证
+        required_columns = [
+            'code', 'date', 'open', 'high', 'low', 'close', 'preclose',
+            'volume', 'amount', 'turn', 'tradestatus', 'isST', 'adjustflag'
+        ]
+        
+        # 检查缺失列
+        missing_cols = set(required_columns) - set(df.columns)
+        if missing_cols:
+            raise ValueError(f"缺失必要列: {missing_cols}")
+
+        # 类型强制转换
+        df = df.copy()
+        df['date'] = pd.to_datetime(df['date']).dt.date  # 确保为date对象
+        
+        # 准备批量数据
+        data = []
+        for _, row in df.iterrows():
+            try:
+                data.append((
+                    str(row['code']),
+                    row['date'],
+                    float(row['open']),
+                    float(row['high']),
+                    float(row['low']),
+                    float(row['close']),
+                    float(row['preclose']),
+                    int(row['volume']),
+                    float(row['amount']),
+                    float(row['turn']),
+                    int(row['tradestatus']),
+                    int(row['isST']),
+                    str(row['adjustflag'])
+                ))
+            except Exception as e:
+                logger.error(f"行数据转换失败: {row.to_dict()}\n错误: {str(e)}")
+                continue
+
+        # 分批写入（每批10,000行）
+        batch_size = 10000
+        for i in range(0, len(data), batch_size):
+            batch = data[i:i + batch_size]
+            client.execute(
+                """INSERT INTO daily_k (
+                    code, date, open, high, low, close, preclose,
+                    volume, amount, turn, tradestatus, isST, adjustflag
+                ) VALUES""",
+                batch,
+                types_check=True
+            )
+            logger.info(f"写入批次 {i//batch_size + 1} (行 {i}-{i+len(batch)})")
+
+    except Exception as e:
+        logger.error(f"批量写入失败: {str(e)}")
+        if not df.empty:
+            logger.error(f"首行数据样例: {df.iloc[0].to_dict()}")
+        raise
+
+def process_stock_data(df, code):
+    """增强类型转换（处理字符串数字）"""
+    df = df.copy()
+    df['code'] = code
+    
+    # 强制转换日期
+    if 'date' in df.columns:
+        df['date'] = pd.to_datetime(df['date']).dt.date
+    
+    # 处理数字列（兼容字符串数字）
+    numeric_cols = ['open', 'high', 'low', 'close', 'preclose', 'turn', 'amount']
+    for col in numeric_cols:
+        if col in df.columns:
+            # 先统一转为字符串，再处理千分位等特殊情况
+            str_vals = df[col].astype(str).str.replace(',', '')
+            df[col] = pd.to_numeric(str_vals, errors='coerce')
+    
+    # 处理整数列
+    int_cols = {'volume': 'uint64', 'tradestatus': 'uint8', 'isST': 'uint8'}
+    for col, dtype in int_cols.items():
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(dtype)
+    
+    return df[['code', 'date', 'open', 'high', 'low', 'close', 'preclose',
+              'volume', 'amount', 'turn', 'tradestatus', 'isST', 'adjustflag']]
+
+def get_all_stock_codes():
+    """从AllA.xlsx获取所有沪深A股代码（处理="XXXXXX"格式）"""
+    try:
+        # 文件路径处理 - 与脚本同目录
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(current_dir, "AllA.xlsx")
+        
+        # 检查文件是否存在
+        if not os.path.exists(file_path):
+            logger.error(f"文件不存在: {file_path}")
+            return []
+        
+        logger.info(f"正在从 {file_path} 读取股票代码...")
+        
+        # 使用openpyxl读取Excel
+        wb = load_workbook(filename=file_path, read_only=True)
+        sheet = wb.active
+        
+        stock_codes = []
+        processed_count = 0
+        skipped_count = 0
+        
+        # 从B2单元格开始读取（第2行第2列）
+        for row_idx, row in enumerate(sheet.iter_rows(min_row=2, min_col=2, max_col=2), start=2):
+            cell_value = str(row[0].value).strip()  # 转为字符串并去除首尾空格
+            
+            # 处理 ="XXXXXX" 或 = "XXXXXX" 格式
+            if cell_value.startswith('='):
+                # 统一去除等号并清理引号
+                quoted_part = cell_value[1:].strip()  # 去除等号和后边的空格
+                
+                # 处理不同引号格式
+                if quoted_part.startswith('"') and quoted_part.endswith('"'):
+                    code = quoted_part[1:-1].strip()  # 提取引号内容
+                elif quoted_part.startswith("'") and quoted_part.endswith("'"):
+                    code = quoted_part[1:-1].strip()  # 提取引号内容
+                else:
+                    # 尝试直接提取6位数字
+                    code = quoted_part
+                
+                # 验证6位数字
+                if code.isdigit() and len(code) == 6:
+                    # 补全市场前缀
+                    if code.startswith('6'):
+                        full_code = f"sh.{code}"
+                    elif code.startswith(('0', '3')):
+                        full_code = f"sz.{code}"
+                    else:
+                        logger.warning(f"行 {row_idx}: 未知市场代码: {code}")
+                        skipped_count += 1
+                        continue
+                    
+                    stock_codes.append(full_code)
+                    processed_count += 1
+                else:
+                    logger.warning(f"行 {row_idx}: 无效代码格式: {quoted_part}")
+                    skipped_count += 1
+            else:
+                logger.info(f"行 {row_idx}: 非等号开头格式 - 跳过: {cell_value}")
+                skipped_count += 1
+
+        wb.close()
+
+        # 结果统计
+        logger.info(f"成功提取 {processed_count} 只股票代码")
+        if skipped_count > 0:
+            logger.warning(f"跳过 {skipped_count} 个无效条目")
+        
+        # 打印示例
+        if stock_codes:
+            logger.info("示例代码(前20个):")
+            for i, code in enumerate(stock_codes[:20], 1):
+                logger.info(f"{i}. {code}")
+            if len(stock_codes) > 20:
+                logger.info(f"...(共 {len(stock_codes)} 个)")
+        
+        return stock_codes
+        
+    except Exception as e:
+        logger.error(f"读取股票代码失败: {str(e)}", exc_info=True)
+        return []
+    
+class BaostockManager:
+    """Baostock连接管理器"""
+    _instance = None
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._init()
+        return cls._instance
+    
+    def _init(self):
+        self._lock = threading.Lock()
+        self._connected = False
+        self._last_activity = None
+        
+    def ensure_connection(self):
+        """确保连接有效"""
+        with self._lock:
+            if not self._connected or (time.time() - self._last_activity) > 300:
+                self._connect()
+            self._last_activity = time.time()
+            return self._connected
+    
+    def _connect(self):
+        for attempt in range(3):
+            try:
+                result = bs.login()
+                if result.error_code == '0':
+                    self._connected = True
+                    return True
+            except Exception as e:
+                logger.warning(f"登录尝试 {attempt+1}/3 失败: {str(e)}")
+            time.sleep(2 ** attempt)
+        self._connected = False
+        return False
+    
+    def safe_query(self, *args, **kwargs):
+        """安全查询方法"""
+        self.ensure_connection()
+        try:
+            return bs.query_history_k_data_plus(*args, **kwargs)
+        except Exception as e:
+            logger.warning(f"查询异常: {str(e)}，尝试重新连接")
+            self._connect()
+            return bs.query_history_k_data_plus(*args, **kwargs)

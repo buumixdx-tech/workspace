@@ -1,0 +1,35 @@
+{
+  "type": "object",
+  "properties": {
+    "company_intro": {
+      "type": "string",
+      "description": "30字以内的公司基本业务介绍",
+      "maxLength": 30
+    },
+    "direct_links": {
+      "type": "array",
+      "description": "直接挂钩的热点领域名称列表（严格从预设列表中提取）",
+      "items": {
+        "type": "string"
+      }
+    },
+    "potential_links": {
+      "type": "array",
+      "description": "有潜在关联的热点领域名称列表",
+      "items": {
+        "type": "string"
+      }
+    },
+    "report_md": {
+      "type": "string",
+      "description": "Markdown格式的详细分析报告，包含核心业务解析、强关联/潜在关联逻辑以及排除说明"
+    }
+  },
+  "required": [
+    "company_intro",
+    "direct_links",
+    "potential_links",
+    "report_md"
+  ],
+  "additionalProperties": false
+}

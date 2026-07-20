@@ -1,0 +1,30 @@
+# modules/config_loader.py
+
+import yaml
+from typing import Dict, Any
+
+def load_config(config_path: str) -> Dict[str, Any]:
+    """
+    加载策略配置文件
+    
+    Args:
+        config_path: 配置文件路径
+        
+    Returns:
+        配置字典
+    """
+    with open(config_path, 'r', encoding='utf-8') as file:
+        config = yaml.safe_load(file)
+    return config
+
+def get_strategy_config(config: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    获取策略配置
+    
+    Args:
+        config: 完整配置字典
+        
+    Returns:
+        策略配置字典
+    """
+    return config.get('strategy', {})
