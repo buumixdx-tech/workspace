@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>avlib</title>
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/plyr.css">
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="hdr-row hdr-row-1">
+      <div class="brand">avlib</div>
+      <input id="search" type="search" placeholder="搜索 番号 / 标题 / 演员..." autocomplete="off">
+    </div>
+    <div class="hdr-row hdr-row-2">
+      <select id="sort">
+        <option value="added">最近添加</option>
+        <option value="released">发行日期</option>
+        <option value="title">标题</option>
+      </select>
+      <button id="refresh" class="refresh-btn" title="扫描视频源,拾取新条目并自动刮削" data-icon="🔄">刷新库</button>
+      <span id="scan-status" class="scan-status"></span>
+      <a id="review-queue-link" class="refresh-btn" href="/review-queue.html" title="待 review 的多文件/冲突条目" data-icon="📋">Review</a>
+      <button id="mobile-filters-btn" class="refresh-btn" title="打开筛选" data-icon="🎛">🎛 筛选</button>
+    </div>
+  </header>
+
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <span class="title">筛选</span>
+      <button class="close-x" type="button" aria-label="关闭">✕</button>
+    </div>
+    <div class="filter-group">
+      <label>厂牌</label>
+      <select id="f-maker"><option value="">全部</option></select>
+    </div>
+    <div class="filter-group">
+      <label>类型</label>
+      <select id="f-genre"><option value="">全部</option></select>
+    </div>
+    <div class="filter-group">
+      <label>系列</label>
+      <select id="f-series"><option value="">全部</option></select>
+    </div>
+    <div class="filter-group">
+      <label>演员</label>
+      <select id="f-actress"><option value="">全部</option></select>
+    </div>
+    <div class="filter-group">
+      <label>年份</label>
+      <select id="f-year"><option value="">全部</option></select>
+    </div>
+    <div class="filter-group toggles">
+      <label><input type="checkbox" id="f-uncensored"> 仅无码</label>
+    </div>
+    <button id="clear-filters">清除筛选</button>
+  </aside>
+
+  <main>
+    <div id="grid" class="grid"></div>
+    <div id="pager">
+      <button id="prev">‹ 上一页</button>
+      <span id="page-info"></span>
+      <button id="next">下一页 ›</button>
+    </div>
+  </main>
+</div>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-bg"></div>
+  <div class="modal-card" id="modal-card"></div>
+</div>
+
+<script defer src="/plyr.polyfilled.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

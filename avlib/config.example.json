@@ -1,0 +1,11 @@
+{
+  "webdav": {
+    "baseUrl": "http://localhost:21998/dav",
+    "username": "YOUR_USER",
+    "password": "YOUR_PASS"
+  },
+  "db": { "path": "./data/avlib.db" },
+  "scrape": { "rateLimitMs": 300 },
+  "auth": { "password": "" },
+  "server": { "port": 8123, "host": "0.0.0.0" }
+}

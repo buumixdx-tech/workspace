@@ -9,7 +9,6 @@ All/
 Apache/
 Docker/
 MySQL/
-avlib/
 
 # Specific output dirs (产物)
 Trading/annual_report/

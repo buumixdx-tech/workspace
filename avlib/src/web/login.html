@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>avlib · 登录</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0f0f12; color: #e4e4e8; font: 14px/1.5 system-ui, "Microsoft YaHei", sans-serif;
+    display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  .card { background: #18181d; border: 1px solid #2a2a33; border-radius: 10px; padding: 28px; width: 320px; }
+  h1 { font-size: 20px; color: #6ea8fe; margin-bottom: 18px; }
+  input { width: 100%; background: #202028; border: 1px solid #2a2a33; color: #e4e4e8;
+    padding: 10px 12px; border-radius: 6px; outline: none; margin-bottom: 12px; }
+  input:focus { border-color: #4c9aff; }
+  button { width: 100%; background: #4c9aff; color: #fff; border: none; padding: 10px;
+    border-radius: 6px; cursor: pointer; font-size: 14px; }
+  button:disabled { background: #202028; color: #8a8a96; }
+  .err { color: #d65a5a; font-size: 12px; min-height: 16px; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>avlib</h1>
+  <form id="f">
+    <input type="password" id="pw" placeholder="密码" autofocus>
+    <div class="err" id="err"></div>
+    <button type="submit">登录</button>
+  </form>
+</div>
+<script>
+document.getElementById('f').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const pw = document.getElementById('pw').value;
+  const btn = e.target.querySelector('button');
+  btn.disabled = true;
+  const r = await fetch('/api/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'password=' + encodeURIComponent(pw),
+  });
+  if (r.ok) { location.href = '/'; }
+  else { document.getElementById('err').textContent = '密码错误'; btn.disabled = false; }
+});
+</script>
+</body>
+</html>

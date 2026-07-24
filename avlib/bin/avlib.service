@@ -1,0 +1,20 @@
+[Unit]
+Description=avlib - adult video library web server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/mnt/d/WorkSpace/avlib
+Environment=PATH=/home/buumi/n/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+Environment=NODE_OPTIONS=--disable-warning=ExperimentalWarning
+ExecStart=/home/buumi/n/bin/node src/server.js
+Restart=on-failure
+RestartSec=5
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

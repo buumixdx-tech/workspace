@@ -1,0 +1,20 @@
+{
+  "name": "avlib",
+  "version": "0.1.0",
+  "description": "Adult video library - scraper + web service (LAN, rk3528)",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "scrape": "node --disable-warning=ExperimentalWarning src/scraper/cli.js",
+    "scan": "node --disable-warning=ExperimentalWarning src/scan.js",
+    "scan:dry": "node --disable-warning=ExperimentalWarning src/scan.js --scan-only",
+    "start": "node --disable-warning=ExperimentalWarning src/server.js"
+  },
+  "dependencies": {
+    "plyr": "^3.8.4",
+    "webdav": "^5.8.0"
+  }
+}

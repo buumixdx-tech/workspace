@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Review Queue · avlib</title>
+<link rel="stylesheet" href="/style.css">
+<style>
+  body { background: var(--bg, #0f1014); color: var(--text, #e7e9ee); margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { padding: 16px 24px; border-bottom: 1px solid var(--border, #2a2d36); display: flex; align-items: center; gap: 16px; }
+  header h1 { font-size: 16px; margin: 0; }
+  header a { color: var(--accent, #6db3f3); text-decoration: none; font-size: 13px; }
+  header a:hover { text-decoration: underline; }
+  .summary { padding: 12px 24px; color: var(--muted, #9ba0ac); font-size: 13px; border-bottom: 1px solid var(--border, #2a2d36); }
+  main { padding: 16px 24px; max-width: 1100px; margin: 0 auto; }
+  .movie-row { background: var(--panel, #181a21); border: 1px solid var(--border, #2a2d36); border-radius: 6px; margin-bottom: 12px; padding: 12px 14px; }
+  .movie-row h3 { margin: 0 0 8px; font-size: 14px; display: flex; gap: 10px; align-items: baseline; }
+  .movie-row h3 .code { color: var(--accent, #6db3f3); font-family: monospace; font-size: 13px; }
+  .movie-row h3 .stats { color: var(--muted, #9ba0ac); font-size: 11px; font-weight: normal; }
+  .video-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .video-table th { text-align: left; color: var(--muted, #9ba0ac); padding: 4px 6px; border-bottom: 1px solid var(--border, #2a2d36); font-weight: normal; }
+  .video-table td { padding: 5px 6px; border-bottom: 1px solid var(--border, #2a2d36); }
+  .video-table tr:last-child td { border-bottom: 0; }
+  .video-table .file { font-family: monospace; color: var(--muted, #9ba0ac); }
+  .video-table select { background: var(--panel2, #1f222a); border: 1px solid var(--border, #2a2d36); color: var(--text, #e7e9ee); padding: 3px 6px; border-radius: 3px; font-size: 12px; }
+  .video-table button { background: var(--accent2, #4a90e2); color: #fff; border: none; padding: 3px 10px; border-radius: 3px; font-size: 11px; cursor: pointer; }
+  .video-table button:disabled { background: var(--panel2, #1f222a); color: var(--muted, #9ba0ac); cursor: default; }
+  .video-table button:hover:not(:disabled) { opacity: .85; }
+  .empty { text-align: center; padding: 60px 0; color: var(--muted, #9ba0ac); }
+  .badge-conflict { background: #d65a5a; color: #fff; padding: 1px 5px; border-radius: 3px; font-size: 10px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Review Queue</h1>
+  <a href="/">← 返回浏览</a>
+  <button id="refresh-btn" style="margin-left:auto;background:var(--accent2);color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer">刷新</button>
+</header>
+<div class="summary" id="summary">加载中…</div>
+<main id="main"></main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+async function load() {
+  $('main').innerHTML = '<div class="empty">加载中…</div>';
+  let queue;
+  try {
+    const r = await fetch('/api/review-queue');
+    queue = await r.json();
+  } catch (e) {
+    $('main').innerHTML = `<div class="empty">加载失败: ${e.message}</div>`;
+    return;
+  }
+  $('summary').textContent = queue.length
+    ? `共 ${queue.length} 部待 review · 多版本 / 多文件 / 冲突待处理`
+    : '✓ 队列为空,所有条目都已归类。';
+
+  if (!queue.length) {
+    $('main').innerHTML = '<div class="empty">✓ 队列为空</div>';
+    return;
+  }
+
+  $('main').innerHTML = queue.map((m) => {
+    const rows = m.videos.map((v) => `
+      <tr data-vid="${v.id}">
+        <td>${v.part_label || v.part_index || '—'}</td>
+        <td><span class="file">${v.filename}</span></td>
+        <td>${(v.size_bytes / 1024 / 1024 / 1024).toFixed(2)} GB</td>
+        <td>
+          <select data-vid="${v.id}" data-orig="${v.variant}">
+            <option value=""${v.variant === '' ? ' selected' : ''}>untagged</option>
+            <option value="censored"${v.variant === 'censored' ? ' selected' : ''}>censored</option>
+            <option value="leak"${v.variant === 'leak' ? ' selected' : ''}>leak</option>
+          </select>
+        </td>
+        <td>
+          <button class="save-btn" data-vid="${v.id}">保存</button>
+          ${v.conflict_reason ? `<span class="badge-conflict" title="${v.conflict_reason}">冲突</span>` : ''}
+        </td>
+      </tr>
+    `).join('');
+    const stats = `${m.video_count} 视频 · ${m.variant_count} 版本 · ${m.untagged_count} 未标${m.conflict_count ? ` · <span class="badge-conflict">${m.conflict_count} 冲突</span>` : ''}`;
+    return `
+      <div class="movie-row">
+        <h3>
+          <span class="code">${m.code}</span>
+          <span>${m.title_cn || m.title || ''}</span>
+          <span class="stats">${stats}</span>
+        </h3>
+        <table class="video-table">
+          <thead><tr><th>Part</th><th>文件</th><th>大小</th><th>Variant</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }).join('');
+
+  // Bind save buttons
+  $('main').querySelectorAll('.save-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const vid = parseInt(btn.dataset.vid, 10);
+      const sel = $('main').querySelector(`select[data-vid="${vid}"]`);
+      const orig = sel.dataset.orig;
+      const variant = sel.value;
+      if (variant === orig) { btn.textContent = '未改'; setTimeout(() => btn.textContent = '保存', 1200); return; }
+      btn.disabled = true; btn.textContent = '…';
+      try {
+        const r = await fetch(`/api/videos/${vid}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ variant }),
+        });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        btn.textContent = '✓'; sel.dataset.orig = variant;
+        setTimeout(() => { btn.disabled = false; btn.textContent = '保存'; }, 1200);
+      } catch (e) {
+        btn.textContent = '失败'; btn.disabled = false;
+        setTimeout(() => btn.textContent = '保存', 2000);
+        alert('保存失败: ' + e.message);
+      }
+    });
+  });
+}
+
+$('refresh-btn').addEventListener('click', load);
+load();
+</script>
+</body>
+</html>
